@@ -1,19 +1,23 @@
 from sqlmodel import SQLModel
 
+from app.models.agent import (
+    Agent,
+    AgentBase,
+    AgentCreate,
+    AgentPublic,
+    AgentsPublic,
+    AgentUpdate,
+    AgentVersion,
+    AgentVersionCreate,
+    AgentVersionPublic,
+    AgentVersionsPublic,
+)
 from app.models.base import (
     Message,
     NewPassword,
     Token,
     TokenPayload,
     get_datetime_utc,
-)
-from app.models.item import (
-    Item,
-    ItemBase,
-    ItemCreate,
-    ItemPublic,
-    ItemsPublic,
-    ItemUpdate,
 )
 from app.models.user import (
     UpdatePassword,
@@ -29,17 +33,21 @@ from app.models.user import (
 
 __all__ = [
     "SQLModel",
+    "Agent",
+    "AgentBase",
+    "AgentCreate",
+    "AgentPublic",
+    "AgentsPublic",
+    "AgentUpdate",
+    "AgentVersion",
+    "AgentVersionCreate",
+    "AgentVersionPublic",
+    "AgentVersionsPublic",
     "Message",
     "NewPassword",
     "Token",
     "TokenPayload",
     "get_datetime_utc",
-    "Item",
-    "ItemBase",
-    "ItemCreate",
-    "ItemPublic",
-    "ItemsPublic",
-    "ItemUpdate",
     "UpdatePassword",
     "User",
     "UserBase",
@@ -51,5 +59,6 @@ __all__ = [
     "UserUpdateMe",
 ]
 
+Agent.model_rebuild()
+AgentVersion.model_rebuild()
 User.model_rebuild()
-Item.model_rebuild()

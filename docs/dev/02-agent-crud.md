@@ -828,4 +828,4 @@ TanStack Router 的动态参数是 `$` 前缀，文件名必须是 `agents.$agen
 ## 偏差记录
 
 - 实际接口路径与本文档不一致之处：
-- 其它偏差：
+- 其它偏差：当前 SQLModel / SQLAlchemy 会把字符串注解 `"User | None"` 整体解析为类名并导致 mapper 初始化失败；由于 `owner_id` 本身不可空，实际使用与阶段 01 Item 模型相同形式的 `owner: "User"` 前向引用，关系和数据库约束语义不变。为满足“移除 Item 全部痕迹”，同时删除了 `frontend/tests/utils/random.ts` 中仅供已删除 Item E2E 使用的两个随机数据函数，并清理了任务 10 引用表遗漏的 `backend/app/api/routes/users.py` 中 Item import/显式删除逻辑；用户关联 Agent 仍由模型和外键的双层 CASCADE 删除。

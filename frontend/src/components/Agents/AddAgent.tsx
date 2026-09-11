@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type ItemCreate, ItemsService } from "@/client"
+import { type AgentCreate, AgentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,87 +27,80 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
+import { Textarea } from "@/components/ui/textarea"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
 const formSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
+  name: z.string().min(1, { message: "Name is required" }),
   description: z.string().optional(),
+  system_prompt: z.string().optional(),
+  llm_model: z.string().min(1, { message: "Model is required" }),
 })
 
 type FormData = z.infer<typeof formSchema>
 
-const AddItem = () => {
+const AddAgent = () => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      title: "",
+      name: "",
       description: "",
+      system_prompt: "",
+      llm_model: "gpt-4o-mini",
     },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ItemCreate) => ItemsService.createItem({ body: data }),
+    mutationFn: (data: AgentCreate) =>
+      AgentsService.createAgent({ body: data }),
     onSuccess: () => {
-      showSuccessToast("Item created successfully")
+      showSuccessToast("Agent created successfully")
       form.reset()
       setIsOpen(false)
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["agents"] })
     },
   })
-
-  const onSubmit = (data: FormData) => {
-    mutation.mutate(data)
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="my-4">
+        <Button className="my-4" data-testid="add-agent-button">
           <Plus className="mr-2" />
-          Add Item
+          Add Agent
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add Item</DialogTitle>
+          <DialogTitle>Add Agent</DialogTitle>
           <DialogDescription>
-            Fill in the details to add a new item.
+            Define the initial configuration for this agent.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))}>
             <div className="grid gap-4 py-4">
               <FormField
                 control={form.control}
-                name="title"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Title <span className="text-destructive">*</span>
-                    </FormLabel>
+                    <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Title"
-                        type="text"
-                        {...field}
-                        required
-                      />
+                      <Input data-testid="agent-name-input" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="description"
@@ -115,21 +108,53 @@ const AddItem = () => {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input placeholder="Description" type="text" {...field} />
+                      <Input data-testid="agent-description-input" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="system_prompt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>System prompt</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        data-testid="agent-system-prompt-input"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="llm_model"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Model</FormLabel>
+                    <FormControl>
+                      <Input data-testid="agent-model-input" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="outline" disabled={mutation.isPending}>
                   Cancel
                 </Button>
               </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
+              <LoadingButton
+                type="submit"
+                loading={mutation.isPending}
+                data-testid="save-agent-button"
+              >
                 Save
               </LoadingButton>
             </DialogFooter>
@@ -140,4 +165,4 @@ const AddItem = () => {
   )
 }
 
-export default AddItem
+export default AddAgent

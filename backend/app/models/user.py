@@ -9,7 +9,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from app.models.base import get_datetime_utc
 
 if TYPE_CHECKING:
-    from app.models.item import Item
+    from app.models.agent import Agent
 
 
 class UserBase(SQLModel):
@@ -54,7 +54,7 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
-    items: list["Item"] = Relationship(  # noqa: UP037
+    agents: list["Agent"] = Relationship(  # noqa: UP037
         back_populates="owner", cascade_delete=True
     )
 

@@ -5,6 +5,222 @@ export type ClientOptions = {
 };
 
 /**
+ * AgentCreate
+ */
+export type AgentCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * System Prompt
+     */
+    system_prompt?: string;
+    /**
+     * Llm Model
+     */
+    llm_model?: string;
+    /**
+     * Llm Settings
+     */
+    llm_settings?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Max Iterations
+     */
+    max_iterations?: number;
+    /**
+     * Timeout Seconds
+     */
+    timeout_seconds?: number;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+};
+
+/**
+ * AgentPublic
+ */
+export type AgentPublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * System Prompt
+     */
+    system_prompt?: string;
+    /**
+     * Llm Model
+     */
+    llm_model?: string;
+    /**
+     * Llm Settings
+     */
+    llm_settings?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Max Iterations
+     */
+    max_iterations?: number;
+    /**
+     * Timeout Seconds
+     */
+    timeout_seconds?: number;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Updated At
+     */
+    updated_at?: string | null;
+    /**
+     * Latest Version Number
+     */
+    latest_version_number?: number | null;
+};
+
+/**
+ * AgentUpdate
+ */
+export type AgentUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * System Prompt
+     */
+    system_prompt?: string | null;
+    /**
+     * Llm Model
+     */
+    llm_model?: string | null;
+    /**
+     * Llm Settings
+     */
+    llm_settings?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Max Iterations
+     */
+    max_iterations?: number | null;
+    /**
+     * Timeout Seconds
+     */
+    timeout_seconds?: number | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+};
+
+/**
+ * AgentVersionCreate
+ *
+ * Request body for publishing an immutable agent version.
+ */
+export type AgentVersionCreate = {
+    /**
+     * Changelog
+     */
+    changelog?: string | null;
+};
+
+/**
+ * AgentVersionPublic
+ */
+export type AgentVersionPublic = {
+    /**
+     * Changelog
+     */
+    changelog?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Agent Id
+     */
+    agent_id: string;
+    /**
+     * Version Number
+     */
+    version_number: number;
+    /**
+     * Snapshot
+     */
+    snapshot: {
+        [key: string]: unknown;
+    };
+    /**
+     * Is Draft
+     */
+    is_draft: boolean;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+};
+
+/**
+ * AgentVersionsPublic
+ */
+export type AgentVersionsPublic = {
+    /**
+     * Data
+     */
+    data: Array<AgentVersionPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * AgentsPublic
+ */
+export type AgentsPublic = {
+    /**
+     * Data
+     */
+    data: Array<AgentPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * Body_login-login_access_token
  */
 export type Body_login_login_access_token = {
@@ -42,74 +258,6 @@ export type HTTPValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
-};
-
-/**
- * ItemCreate
- */
-export type ItemCreate = {
-    /**
-     * Title
-     */
-    title: string;
-    /**
-     * Description
-     */
-    description?: string | null;
-};
-
-/**
- * ItemPublic
- */
-export type ItemPublic = {
-    /**
-     * Title
-     */
-    title: string;
-    /**
-     * Description
-     */
-    description?: string | null;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Owner Id
-     */
-    owner_id: string;
-    /**
-     * Created At
-     */
-    created_at?: string | null;
-};
-
-/**
- * ItemUpdate
- */
-export type ItemUpdate = {
-    /**
-     * Title
-     */
-    title?: string | null;
-    /**
-     * Description
-     */
-    description?: string | null;
-};
-
-/**
- * ItemsPublic
- */
-export type ItemsPublic = {
-    /**
-     * Data
-     */
-    data: Array<ItemPublic>;
-    /**
-     * Count
-     */
-    count: number;
 };
 
 /**
@@ -772,7 +920,7 @@ export type utilsHealthCheckResponses = {
 
 export type utilsHealthCheckResponse = utilsHealthCheckResponses[keyof utilsHealthCheckResponses];
 
-export type itemsReadItemsData = {
+export type agentsReadAgentsData = {
     body?: never;
     path?: never;
     query?: {
@@ -785,53 +933,53 @@ export type itemsReadItemsData = {
          */
         limit?: number;
     };
-    url: '/api/v1/items/';
+    url: '/api/v1/agents/';
 };
 
-export type itemsReadItemsErrors = {
+export type agentsReadAgentsErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsReadItemsError = itemsReadItemsErrors[keyof itemsReadItemsErrors];
+export type agentsReadAgentsError = agentsReadAgentsErrors[keyof agentsReadAgentsErrors];
 
-export type itemsReadItemsResponses = {
+export type agentsReadAgentsResponses = {
     /**
      * Successful Response
      */
-    200: ItemsPublic;
+    200: AgentsPublic;
 };
 
-export type itemsReadItemsResponse = itemsReadItemsResponses[keyof itemsReadItemsResponses];
+export type agentsReadAgentsResponse = agentsReadAgentsResponses[keyof agentsReadAgentsResponses];
 
-export type itemsCreateItemData = {
-    body: ItemCreate;
+export type agentsCreateAgentData = {
+    body: AgentCreate;
     path?: never;
     query?: never;
-    url: '/api/v1/items/';
+    url: '/api/v1/agents/';
 };
 
-export type itemsCreateItemErrors = {
+export type agentsCreateAgentErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsCreateItemError = itemsCreateItemErrors[keyof itemsCreateItemErrors];
+export type agentsCreateAgentError = agentsCreateAgentErrors[keyof agentsCreateAgentErrors];
 
-export type itemsCreateItemResponses = {
+export type agentsCreateAgentResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: AgentPublic;
 };
 
-export type itemsCreateItemResponse = itemsCreateItemResponses[keyof itemsCreateItemResponses];
+export type agentsCreateAgentResponse = agentsCreateAgentResponses[keyof agentsCreateAgentResponses];
 
-export type itemsDeleteItemData = {
+export type agentsDeleteAgentData = {
     body?: never;
     path: {
         /**
@@ -840,28 +988,28 @@ export type itemsDeleteItemData = {
         id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}';
+    url: '/api/v1/agents/{id}';
 };
 
-export type itemsDeleteItemErrors = {
+export type agentsDeleteAgentErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsDeleteItemError = itemsDeleteItemErrors[keyof itemsDeleteItemErrors];
+export type agentsDeleteAgentError = agentsDeleteAgentErrors[keyof agentsDeleteAgentErrors];
 
-export type itemsDeleteItemResponses = {
+export type agentsDeleteAgentResponses = {
     /**
      * Successful Response
      */
     200: Message;
 };
 
-export type itemsDeleteItemResponse = itemsDeleteItemResponses[keyof itemsDeleteItemResponses];
+export type agentsDeleteAgentResponse = agentsDeleteAgentResponses[keyof agentsDeleteAgentResponses];
 
-export type itemsReadItemData = {
+export type agentsReadAgentData = {
     body?: never;
     path: {
         /**
@@ -870,29 +1018,29 @@ export type itemsReadItemData = {
         id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}';
+    url: '/api/v1/agents/{id}';
 };
 
-export type itemsReadItemErrors = {
+export type agentsReadAgentErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsReadItemError = itemsReadItemErrors[keyof itemsReadItemErrors];
+export type agentsReadAgentError = agentsReadAgentErrors[keyof agentsReadAgentErrors];
 
-export type itemsReadItemResponses = {
+export type agentsReadAgentResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: AgentPublic;
 };
 
-export type itemsReadItemResponse = itemsReadItemResponses[keyof itemsReadItemResponses];
+export type agentsReadAgentResponse = agentsReadAgentResponses[keyof agentsReadAgentResponses];
 
-export type itemsUpdateItemData = {
-    body: ItemUpdate;
+export type agentsUpdateAgentData = {
+    body: AgentUpdate;
     path: {
         /**
          * Id
@@ -900,26 +1048,120 @@ export type itemsUpdateItemData = {
         id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}';
+    url: '/api/v1/agents/{id}';
 };
 
-export type itemsUpdateItemErrors = {
+export type agentsUpdateAgentErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsUpdateItemError = itemsUpdateItemErrors[keyof itemsUpdateItemErrors];
+export type agentsUpdateAgentError = agentsUpdateAgentErrors[keyof agentsUpdateAgentErrors];
 
-export type itemsUpdateItemResponses = {
+export type agentsUpdateAgentResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: AgentPublic;
 };
 
-export type itemsUpdateItemResponse = itemsUpdateItemResponses[keyof itemsUpdateItemResponses];
+export type agentsUpdateAgentResponse = agentsUpdateAgentResponses[keyof agentsUpdateAgentResponses];
+
+export type agentsReadVersionsData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}/versions';
+};
+
+export type agentsReadVersionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type agentsReadVersionsError = agentsReadVersionsErrors[keyof agentsReadVersionsErrors];
+
+export type agentsReadVersionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AgentVersionsPublic;
+};
+
+export type agentsReadVersionsResponse = agentsReadVersionsResponses[keyof agentsReadVersionsResponses];
+
+export type agentsPublishVersionData = {
+    body: AgentVersionCreate;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}/versions';
+};
+
+export type agentsPublishVersionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type agentsPublishVersionError = agentsPublishVersionErrors[keyof agentsPublishVersionErrors];
+
+export type agentsPublishVersionResponses = {
+    /**
+     * Successful Response
+     */
+    200: AgentVersionPublic;
+};
+
+export type agentsPublishVersionResponse = agentsPublishVersionResponses[keyof agentsPublishVersionResponses];
+
+export type agentsReadVersionData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+        /**
+         * Version Id
+         */
+        version_id: string;
+    };
+    query?: never;
+    url: '/api/v1/agents/{id}/versions/{version_id}';
+};
+
+export type agentsReadVersionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type agentsReadVersionError = agentsReadVersionErrors[keyof agentsReadVersionErrors];
+
+export type agentsReadVersionResponses = {
+    /**
+     * Successful Response
+     */
+    200: AgentVersionPublic;
+};
+
+export type agentsReadVersionResponse = agentsReadVersionResponses[keyof agentsReadVersionResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;

@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsReadItemsData, itemsReadItemsErrors, itemsReadItemsResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -284,31 +284,31 @@ export class UtilsService {
     }
 }
 
-export class ItemsService {
+export class AgentsService {
     /**
-     * Read Items
+     * Read Agents
      *
-     * Retrieve items.
+     * Retrieve agents.
      */
-    public static readItems<ThrowOnError extends boolean = true>(options?: Options<itemsReadItemsData, ThrowOnError>) {
-        return (options?.client ?? client).get<itemsReadItemsResponses, itemsReadItemsErrors, ThrowOnError>({
+    public static readAgents<ThrowOnError extends boolean = true>(options?: Options<agentsReadAgentsData, ThrowOnError>) {
+        return (options?.client ?? client).get<agentsReadAgentsResponses, agentsReadAgentsErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/',
+            url: '/api/v1/agents/',
             ...options
         });
     }
     
     /**
-     * Create Item
+     * Create Agent
      *
-     * Create new item.
+     * Create a new agent.
      */
-    public static createItem<ThrowOnError extends boolean = true>(options: Options<itemsCreateItemData, ThrowOnError>) {
-        return (options.client ?? client).post<itemsCreateItemResponses, itemsCreateItemErrors, ThrowOnError>({
+    public static createAgent<ThrowOnError extends boolean = true>(options: Options<agentsCreateAgentData, ThrowOnError>) {
+        return (options.client ?? client).post<agentsCreateAgentResponses, agentsCreateAgentErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/',
+            url: '/api/v1/agents/',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -318,48 +318,94 @@ export class ItemsService {
     }
     
     /**
-     * Delete Item
+     * Delete Agent
      *
-     * Delete an item.
+     * Delete an agent.
      */
-    public static deleteItem<ThrowOnError extends boolean = true>(options: Options<itemsDeleteItemData, ThrowOnError>) {
-        return (options.client ?? client).delete<itemsDeleteItemResponses, itemsDeleteItemErrors, ThrowOnError>({
+    public static deleteAgent<ThrowOnError extends boolean = true>(options: Options<agentsDeleteAgentData, ThrowOnError>) {
+        return (options.client ?? client).delete<agentsDeleteAgentResponses, agentsDeleteAgentErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/agents/{id}',
             ...options
         });
     }
     
     /**
-     * Read Item
+     * Read Agent
      *
-     * Get item by ID.
+     * Get an agent by ID.
      */
-    public static readItem<ThrowOnError extends boolean = true>(options: Options<itemsReadItemData, ThrowOnError>) {
-        return (options.client ?? client).get<itemsReadItemResponses, itemsReadItemErrors, ThrowOnError>({
+    public static readAgent<ThrowOnError extends boolean = true>(options: Options<agentsReadAgentData, ThrowOnError>) {
+        return (options.client ?? client).get<agentsReadAgentResponses, agentsReadAgentErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/agents/{id}',
             ...options
         });
     }
     
     /**
-     * Update Item
+     * Update Agent
      *
-     * Update an item.
+     * Update an agent.
      */
-    public static updateItem<ThrowOnError extends boolean = true>(options: Options<itemsUpdateItemData, ThrowOnError>) {
-        return (options.client ?? client).put<itemsUpdateItemResponses, itemsUpdateItemErrors, ThrowOnError>({
+    public static updateAgent<ThrowOnError extends boolean = true>(options: Options<agentsUpdateAgentData, ThrowOnError>) {
+        return (options.client ?? client).patch<agentsUpdateAgentResponses, agentsUpdateAgentErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/agents/{id}',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
+        });
+    }
+    
+    /**
+     * Read Versions
+     *
+     * Retrieve published versions of an agent.
+     */
+    public static readVersions<ThrowOnError extends boolean = true>(options: Options<agentsReadVersionsData, ThrowOnError>) {
+        return (options.client ?? client).get<agentsReadVersionsResponses, agentsReadVersionsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/agents/{id}/versions',
+            ...options
+        });
+    }
+    
+    /**
+     * Publish Version
+     *
+     * Publish a new immutable version of the agent.
+     */
+    public static publishVersion<ThrowOnError extends boolean = true>(options: Options<agentsPublishVersionData, ThrowOnError>) {
+        return (options.client ?? client).post<agentsPublishVersionResponses, agentsPublishVersionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/agents/{id}/versions',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Version
+     *
+     * Get a published agent version by ID.
+     */
+    public static readVersion<ThrowOnError extends boolean = true>(options: Options<agentsReadVersionData, ThrowOnError>) {
+        return (options.client ?? client).get<agentsReadVersionResponses, agentsReadVersionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/agents/{id}/versions/{version_id}',
+            ...options
         });
     }
 }
