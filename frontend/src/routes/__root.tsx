@@ -5,6 +5,7 @@ import ErrorComponent from "@/components/Common/ErrorComponent"
 import NotFound from "@/components/Common/NotFound"
 
 export const Route = createRootRoute({
+  head: () => ({ meta: [{ title: "AgentHub" }] }),
   component: () => (
     <>
       <HeadContent />

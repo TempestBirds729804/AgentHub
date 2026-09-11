@@ -6,9 +6,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import Session
 
 from app.core import security
+from app.core.async_db import get_async_session
 from app.core.config import settings
 from app.core.db import engine
 from app.models import TokenPayload, User
@@ -24,6 +26,9 @@ def get_db() -> Generator[Session]:
 
 
 SessionDep = Annotated[Session, Depends(get_db)]
+# Reserved for Agent execution paths such as streaming runs, workers, checkpoints,
+# and vector retrieval. CRUD endpoints continue to use SessionDep.
+AsyncSessionDep = Annotated[AsyncSession, Depends(get_async_session)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 

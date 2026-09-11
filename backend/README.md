@@ -9,10 +9,10 @@
 
 Run the backend locally and connect it to PostgreSQL in Docker Compose.
 
-From the project root, start PostgreSQL and Mailpit:
+From the project root, start PostgreSQL, Redis, MinIO, and Mailpit:
 
 ```console
-$ docker compose up -d db mailpit
+$ docker compose up -d db redis minio mailpit
 ```
 
 Then, from `./backend/`, install the dependencies, prepare the database, and start the development server:

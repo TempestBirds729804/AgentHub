@@ -39,6 +39,32 @@ class Settings(BaseSettings):
                 return database_url.replace(scheme, "postgresql+psycopg://", 1)
         return database_url
 
+    # --- LLM ---
+    LLM_API_KEY: str = ""
+    LLM_BASE_URL: str = "https://api.openai.com/v1"
+    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_TIMEOUT_SECONDS: int = 120
+    LLM_MAX_RETRIES: int = 2
+
+    # --- Embedding ---
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_DIM: int = 1536
+
+    # --- Agent runtime limits ---
+    AGENT_MAX_ITERATIONS: int = 10
+    AGENT_DEFAULT_TIMEOUT_SECONDS: int = 300
+    AGENT_MAX_CONCURRENT_RUNS_PER_USER: int = 3
+
+    # --- Redis ---
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # --- Object storage ---
+    S3_ENDPOINT: str = "http://localhost:9000"
+    S3_ACCESS_KEY: str = ""
+    S3_SECRET_KEY: str = ""
+    S3_BUCKET: str = "agenthub"
+    S3_SECURE: bool = False
+
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
     SMTP_PORT: int = 587

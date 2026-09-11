@@ -1,88 +1,55 @@
-# Full Stack FastAPI Template
+# AgentHub
 
-[![Test Docker Compose](../../actions/workflows/test-docker-compose.yml/badge.svg)](../../actions/workflows/test-docker-compose.yml)
-[![Test Backend](../../actions/workflows/test-backend.yml/badge.svg)](../../actions/workflows/test-backend.yml)
+AgentHub is an AI Agent management and execution platform built on FastAPI and React. It keeps the template's authentication and administration capabilities while adding a stateful LangGraph runtime, versioned Agent definitions, execution tracing, tools, approval workflows, and knowledge retrieval.
 
-## Technology Stack and Features
+## Capabilities
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-  - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-  - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-  - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-  - 🧩 Built into the backend application and served by FastAPI on the same domain as the API.
-  - 💃 Using TypeScript, hooks, [Vite](https://vitejs.dev), and other parts of a modern frontend stack.
-  - 🎨 [Tailwind CSS](https://tailwindcss.com) and [shadcn/ui](https://ui.shadcn.com) for the frontend components.
-  - 🤖 An automatically generated frontend client.
-  - 🧪 [Playwright](https://playwright.dev) for end-to-end testing.
-  - 🦇 Dark mode support.
-- ☁️ [FastAPI Cloud](https://fastapicloud.com) for deployment.
-- 🐋 [Docker Compose](https://www.docker.com) for local services and self-hosted deployment.
-  - 📞 [Traefik](https://traefik.io) as a reverse proxy with automatic HTTPS.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email-based password recovery.
-- ✉️ [React Email](https://react.email) for email templates.
-- 📬 [Mailpit](https://mailpit.axllent.org) for local email testing during development.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+- Manage Agent definitions and immutable published versions.
+- Run stateful Agents through LangGraph with synchronous streaming and asynchronous workers.
+- Track conversations, runs, events, token usage, latency, and cost.
+- Connect function, HTTP, and MCP tools with optional human approval.
+- Build pgvector-backed knowledge bases from documents stored in S3-compatible storage.
+- Compare Agent versions with repeatable evaluation cases.
 
-### Dashboard Login
+## Technology Stack
 
-![Dashboard login screenshot](img/login.png)
+- FastAPI, SQLModel, PostgreSQL, and pgvector
+- LangGraph and an OpenAI-compatible model adapter
+- Redis and arq for asynchronous execution
+- MinIO for S3-compatible object storage
+- React, TypeScript, TanStack Router, TanStack Query, Tailwind CSS, and shadcn/ui
+- Pytest and Playwright for automated testing
+- Docker Compose and Traefik for local and self-hosted environments
 
-### Dashboard - Admin
+## Quick Start
 
-![Admin dashboard screenshot](img/dashboard.png)
+1. Review the local defaults in `.env`. Keep `LLM_API_KEY` empty for CRUD-only development, or set it locally when model execution is required. Never commit a real API key.
+2. Start the infrastructure services:
 
-### Dashboard - Items
+   ```bash
+   docker compose up -d db redis minio mailpit
+   ```
 
-![Items dashboard screenshot](img/dashboard-items.png)
+3. Install and initialize the backend:
 
-### Dashboard - Dark Mode
+   ```bash
+   cd backend
+   uv sync
+   uv run bash scripts/prestart.sh
+   uv run fastapi dev
+   ```
 
-![Dark mode dashboard screenshot](img/dashboard-dark.png)
+4. In another terminal, start the frontend:
 
-### React Email Templates
+   ```bash
+   bun install
+   bun run dev
+   ```
 
-![Email templates screenshot](img/react-email.png)
+The frontend is available at <http://localhost:5173>, the API documentation at <http://localhost:8000/docs>, the MinIO console at <http://localhost:9001>, and Mailpit at <http://localhost:8025>.
 
-### Mailpit - Local Email Testing
-
-![Mailpit screenshot](img/mailpit.png)
-
-### Interactive API Documentation
-
-![API docs](img/docs.png)
-
-## How to Use It
-
-Click the **Use this template** button at the top of this page to create a new repository.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-FastAPI Cloud deployment: [deployment.md](./deployment.md).
-
-Self-hosted deployment with Docker Compose: [deployment-docker-compose.md](./deployment-docker-compose.md).
-
-## Development
-
-General development docs: [development.md](./development.md).
-
-This includes the local FastAPI and Vite workflow, Docker Compose services, `.env` configuration, and more.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
+The implementation roadmap and phase specifications are in [`docs/dev/`](./docs/dev/). General local-development guidance is in [`development.md`](./development.md), backend-specific guidance is in [`backend/README.md`](./backend/README.md), and deployment guidance is in [`deployment.md`](./deployment.md) and [`deployment-docker-compose.md`](./deployment-docker-compose.md).
 
 ## License
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+AgentHub is licensed under the terms of the MIT license.

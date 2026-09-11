@@ -1,5 +1,5 @@
 {
-  "name": "fastapi-full-stack-template",
+  "name": "agenthub",
   "private": true,
   "workspaces": [
     "frontend",

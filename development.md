@@ -7,7 +7,7 @@ For local development, run PostgreSQL and Mailpit with Docker Compose, and run t
 Start the supporting services:
 
 ```bash
-docker compose up -d db mailpit
+docker compose up -d db redis minio mailpit
 ```
 
 Then, from the `backend` directory, install the dependencies and prepare the database:
@@ -90,6 +90,8 @@ The `compose.override.yml` file adds local development settings, such as mountin
 The `compose.deploy.yml` file contains the deployment-specific settings, including HTTPS and automatic certificate handling. It is explicitly combined with `compose.yml` when deploying the application.
 
 The backend reads local settings from the `.env` file. Docker Compose also uses it for variable interpolation and passes the settings each container needs.
+
+Redis supports Agent job queues, caching, rate limiting, and event delivery. It is available locally at `redis://localhost:6379/0`. MinIO provides S3-compatible storage for source documents and run artifacts; its API is available at <http://localhost:9000> and its local console at <http://localhost:9001>. The development credentials and bucket name are configured in `.env`.
 
 After changing variables, make sure you restart the stack:
 
