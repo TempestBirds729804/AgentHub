@@ -1,13 +1,20 @@
+import asyncio
+import sys
 from collections.abc import Generator
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
+from langchain_core.messages import AIMessage
 from sqlmodel import Session, delete
 
+from app.agent.models import get_provider
+from app.agent.models.openai_compat import OpenAICompatProvider
 from app.core.config import settings
 from app.core.db import engine, init_db
 from app.main import app
-from app.models import Agent, AgentVersion, User
+from app.models import Agent, AgentVersion, Run, RunEvent, User
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
 
@@ -17,14 +24,17 @@ def db() -> Generator[Session]:
     with Session(engine) as session:
         init_db(session)
         yield session
-        for model in (AgentVersion, Agent, User):
+        for model in (RunEvent, Run, AgentVersion, Agent, User):
             session.execute(delete(model))
         session.commit()
 
 
 @pytest.fixture(scope="module")
 def client() -> Generator[TestClient]:
-    with TestClient(app) as c:
+    options = (
+        {"loop_factory": asyncio.SelectorEventLoop} if sys.platform == "win32" else {}
+    )
+    with TestClient(app, backend_options=options) as c:
         yield c
 
 
@@ -38,3 +48,21 @@ def normal_user_token_headers(client: TestClient, db: Session) -> dict[str, str]
     return authentication_token_from_email(
         client=client, email=settings.EMAIL_TEST_USER, db=db
     )
+
+
+@pytest.fixture
+def fake_chat_model(monkeypatch: pytest.MonkeyPatch) -> Generator[GenericFakeChatModel]:
+    """Use a fake model and clear provider caching on both sides of every test."""
+    fake = GenericFakeChatModel(messages=iter([AIMessage(content="fake reply")]))
+
+    def _get_chat_model(
+        _self: OpenAICompatProvider, **_kwargs: Any
+    ) -> GenericFakeChatModel:
+        return fake
+
+    monkeypatch.setattr(settings, "LLM_API_KEY", "test-key")
+    monkeypatch.setattr(settings, "LLM_BASE_URL", "http://127.0.0.1:1/v1")
+    monkeypatch.setattr(OpenAICompatProvider, "get_chat_model", _get_chat_model)
+    get_provider.cache_clear()
+    yield fake
+    get_provider.cache_clear()

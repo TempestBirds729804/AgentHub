@@ -19,6 +19,18 @@ from app.models.base import (
     TokenPayload,
     get_datetime_utc,
 )
+from app.models.run import (
+    Run,
+    RunCreate,
+    RunEvent,
+    RunEventPublic,
+    RunEventsPublic,
+    RunEventType,
+    RunPublic,
+    RunsPublic,
+    RunStatus,
+    RunTrigger,
+)
 from app.models.user import (
     UpdatePassword,
     User,
@@ -32,6 +44,16 @@ from app.models.user import (
 )
 
 __all__ = [
+    "Run",
+    "RunCreate",
+    "RunEvent",
+    "RunEventPublic",
+    "RunEventsPublic",
+    "RunEventType",
+    "RunPublic",
+    "RunsPublic",
+    "RunStatus",
+    "RunTrigger",
     "SQLModel",
     "Agent",
     "AgentBase",
@@ -62,3 +84,5 @@ __all__ = [
 Agent.model_rebuild()
 AgentVersion.model_rebuild()
 User.model_rebuild()
+Run.model_rebuild()
+RunEvent.model_rebuild()

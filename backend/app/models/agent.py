@@ -9,6 +9,7 @@ from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 from app.models.base import get_datetime_utc
 
 if TYPE_CHECKING:
+    from app.models.run import Run
     from app.models.user import User
 
 
@@ -96,6 +97,9 @@ class AgentVersion(AgentVersionBase, table=True):
     )
 
     agent: Agent | None = Relationship(back_populates="versions")
+    runs: list["Run"] = Relationship(  # noqa: UP037
+        back_populates="agent_version", cascade_delete=True
+    )
 
 
 class AgentVersionPublic(AgentVersionBase):

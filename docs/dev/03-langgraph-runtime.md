@@ -945,19 +945,19 @@ queryKey: ["runs", runId, "events"]
 
 ## 阶段验收清单
 
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`
-- [ ] `docker compose exec db psql -U postgres -d app -c "\d run"` 里 `status` 列是 `character varying` 不是自定义 enum 类型
-- [ ] `docker compose exec db psql -U postgres -d app -c "\d run"` 里 `cost_usd` 是 `numeric(12,6)`
-- [ ] `uv run pytest tests/agent/ tests/api/routes/test_runs.py -v` 全绿
-- [ ] 测试运行时没有任何真实网络请求（可以临时把 `LLM_BASE_URL` 改成无效地址，测试应该照样全绿）
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] 手动用真实 key 跑通一次 `POST /api/v1/runs/`，返回真实回复且 token 和费用有值
-- [ ] 故意把 `LLM_MODEL` 改成不存在的模型名，跑一次，确认 Run 落成 `failed`、`error` 有内容、HTTP 状态是 200，且 Run 详情页能看到错误
-- [ ] 故意把 Agent 的 `timeout_seconds` 设为 1，跑一次，确认超时后 Run 落成 `failed` 而不是卡在 `running`
-- [ ] `bun run lint` 通过
-- [ ] 手动验证：Runs 列表有数据且状态 Badge 颜色正确；Run 详情页能看到完整执行轨迹，事件按 seq 排序；从 Agent 详情页的版本行能触发试运行并跳转
-- [ ] 数据库里 `SELECT status, count(*) FROM run GROUP BY status;` 没有任何行卡在 `running`
+- [x] `uv run alembic check` 输出 `No new upgrade operations detected.`
+- [x] `docker compose exec db psql -U postgres -d app -c "\d run"` 里 `status` 列是 `character varying` 不是自定义 enum 类型
+- [x] `docker compose exec db psql -U postgres -d app -c "\d run"` 里 `cost_usd` 是 `numeric(12,6)`
+- [x] `uv run pytest tests/agent/ tests/api/routes/test_runs.py -v` 全绿
+- [x] 测试运行时没有任何真实网络请求（可以临时把 `LLM_BASE_URL` 改成无效地址，测试应该照样全绿）
+- [x] `cd backend && bash scripts/lint.sh` 全绿
+- [x] `cd backend && bash scripts/test.sh` 全绿
+- [x] 手动用真实 key 跑通一次 `POST /api/v1/runs/`，返回真实回复且 token 和费用有值
+- [x] 故意把 `LLM_MODEL` 改成不存在的模型名，跑一次，确认 Run 落成 `failed`、`error` 有内容、HTTP 状态是 200，且 Run 详情页能看到错误
+- [x] 故意把 Agent 的 `timeout_seconds` 设为 1，跑一次，确认超时后 Run 落成 `failed` 而不是卡在 `running`
+- [x] `bun run lint` 通过
+- [x] 手动验证：Runs 列表有数据且状态 Badge 颜色正确；Run 详情页能看到完整执行轨迹，事件按 seq 排序；从 Agent 详情页的版本行能触发试运行并跳转
+- [x] 数据库里 `SELECT status, count(*) FROM run GROUP BY status;` 没有任何行卡在 `running`
 
 ---
 
@@ -994,5 +994,16 @@ queryKey: ["runs", runId, "events"]
 
 ## 偏差记录
 
-- 实际使用的模型与 base_url：
+- 实际使用的模型与 base_url：`deepseek-flash`，`https://api.deepseek.com`（2026-09-12 实测）。
 - 其它偏差：
+  - 前序基线复核：68 项后端测试、Agent 管理 Playwright（含登录共 2 项）、mypy / ty / ruff、Alembic check 通过。Windows 无可用 bash，使用脚本内部等价命令。数据库报告既有 collation 版本不一致，本阶段不修改排序规则。
+  - 当前 LangGraph 的 StateLike 协议边界不能被 ty 正确识别为 TypedDict；graph.py 保留完整泛型及 mypy 检查，仅对该边界使用局部 ty ignore。
+  - ChatOpenAI 使用当前版本的显式参数 max_completion_tokens（对应快照中的 max_tokens）。价格表沿用本文参考值，属于估算而非实时报价。
+  - 为满足双向级联关系约定，需在 backend/app/models/user.py 和 agent.py 增加 Run 反向关系；测试辅助文件 backend/tests/utils/run.py 和前端 components/Runs/、Pending/PendingRuns.tsx 属于本阶段配套实现。
+  - 当前 SQLModel 的 str + Enum 仍会推导为原生 enum，因此显式使用 String(32)；RunEvent 增加 (run_id, seq) 唯一约束，保证同一 Run 的事件序号不会重复。
+  - frontend/tests/runs.spec.ts 将浏览器验收固化为假响应交互测试；真实数据库和 LangGraph 执行由后端测试覆盖。Windows TestClient 显式使用 SelectorEventLoop，与 psycopg 异步连接兼容。
+  - Windows 本地启动已验证：`uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --loop asyncio:SelectorEventLoop`。当前 Uvicorn 默认无 reload 的 Windows loop 是 Proactor，与 psycopg 不兼容；不更改 Linux 部署配置。浏览器访问 `http://localhost:8000`；Playwright 运行时设置 `VITE_API_URL=http://127.0.0.1:8000`，避免 Node 将 localhost 解析为未监听的 IPv6 地址。
+  - 新增实际使用模型 deepseek-flash 的估算价格，按官方峰时、缓存未命中价格计算（输入 $0.3/百万 Token，输出 $1.2/百万 Token）；实际账单受缓存和峰谷时段影响。来源：https://api-docs.deepseek.com/quick_start/pricing/ 。不扩展本阶段的数据模型和计费接口。
+  - 真实验收：成功 Run `fb3eba53-e469-4670-8337-0a7cf13b5104`，耗时 4597 ms，输入/输出 Token 为 38/106，估算费用 $0.000139；无效模型 Run `aaa74b3f-054c-4f9e-b68e-0ae9cbb0afc6` 和 1 秒超时 Run `9edd8c05-d570-41a5-a4f5-79f667f12a2a` 均为 HTTP 200 + failed，事件 seq 为 0、1。无效模型通过发布独立版本验证，不修改全局 LLM_MODEL 或历史快照。
+  - 自动验收：完整后端测试 82 项通过，随后新增 deepseek-flash 价格项及测试，价格测试 4 项通过；mypy、ty、ruff 和 Alembic check 通过；前端 build、Biome 通过，Playwright 的登录、Agent 管理、Run 成功和失败交互共 4 项通过。前端客户端由现有生成器生成，其空白行保留生成器输出，未手改。
+  - 浏览器实测：真实记录列表成功/失败颜色正确，失败详情显示供应商错误且 payload 可展开；从 v1 的 Run 按钮提交后显示等待提示并跳转成功详情（`20087516-a646-4d77-8bbd-6e082c85e504`）。该次常驻服务尚未重载价格表，费用为 Unknown；重启后通过本地 HTTP 再次验证，Run `0a003f25-e552-4a46-ac9d-4074f331a0a5` 输入/输出 Token 为 41/91，估算费用 $0.000122。历史记录不回填。

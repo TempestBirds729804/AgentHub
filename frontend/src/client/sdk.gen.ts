@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -405,6 +405,68 @@ export class AgentsService {
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/agents/{id}/versions/{version_id}',
+            ...options
+        });
+    }
+}
+
+export class RunsService {
+    /**
+     * Read Runs
+     *
+     * Retrieve runs filtered by agent version and status.
+     */
+    public static readRuns<ThrowOnError extends boolean = true>(options?: Options<runsReadRunsData, ThrowOnError>) {
+        return (options?.client ?? client).get<runsReadRunsResponses, runsReadRunsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/runs/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Run
+     *
+     * Create and execute an agent run, blocking until it finishes.
+     */
+    public static createRun<ThrowOnError extends boolean = true>(options: Options<runsCreateRunData, ThrowOnError>) {
+        return (options.client ?? client).post<runsCreateRunResponses, runsCreateRunErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/runs/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Run
+     *
+     * Get a run by ID.
+     */
+    public static readRun<ThrowOnError extends boolean = true>(options: Options<runsReadRunData, ThrowOnError>) {
+        return (options.client ?? client).get<runsReadRunResponses, runsReadRunErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/runs/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Events
+     *
+     * Retrieve run events ordered by sequence number.
+     */
+    public static readEvents<ThrowOnError extends boolean = true>(options: Options<runsReadEventsData, ThrowOnError>) {
+        return (options.client ?? client).get<runsReadEventsResponses, runsReadEventsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/runs/{id}/events',
             ...options
         });
     }

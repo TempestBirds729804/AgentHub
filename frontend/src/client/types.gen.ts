@@ -307,6 +307,179 @@ export type PrivateUserCreate = {
 };
 
 /**
+ * RunCreate
+ */
+export type RunCreate = {
+    /**
+     * Agent Version Id
+     */
+    agent_version_id: string;
+    /**
+     * Input
+     */
+    input?: {
+        [key: string]: unknown;
+    };
+    trigger?: RunTrigger;
+    /**
+     * Conversation Id
+     */
+    conversation_id?: string | null;
+};
+
+/**
+ * RunEventPublic
+ */
+export type RunEventPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Run Id
+     */
+    run_id: string;
+    /**
+     * Seq
+     */
+    seq: number;
+    event_type: RunEventType;
+    /**
+     * Node Name
+     */
+    node_name?: string | null;
+    /**
+     * Payload
+     */
+    payload: {
+        [key: string]: unknown;
+    };
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * RunEventType
+ */
+export type RunEventType = 'run_started' | 'node_started' | 'node_finished' | 'model_chunk' | 'tool_called' | 'tool_result' | 'context_retrieved' | 'approval_requested' | 'approval_resolved' | 'run_finished' | 'run_failed';
+
+/**
+ * RunEventsPublic
+ */
+export type RunEventsPublic = {
+    /**
+     * Data
+     */
+    data: Array<RunEventPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * RunPublic
+ */
+export type RunPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Agent Version Id
+     */
+    agent_version_id: string;
+    /**
+     * Conversation Id
+     */
+    conversation_id?: string | null;
+    status: RunStatus;
+    trigger: RunTrigger;
+    /**
+     * Input
+     */
+    input: {
+        [key: string]: unknown;
+    };
+    /**
+     * Output
+     */
+    output?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Error
+     */
+    error?: string | null;
+    /**
+     * Started At
+     */
+    started_at?: string | null;
+    /**
+     * Finished At
+     */
+    finished_at?: string | null;
+    /**
+     * Duration Ms
+     */
+    duration_ms?: number | null;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * Cost Usd
+     */
+    cost_usd?: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Agent Name
+     */
+    agent_name?: string | null;
+    /**
+     * Agent Version Number
+     */
+    agent_version_number?: number | null;
+};
+
+/**
+ * RunStatus
+ */
+export type RunStatus = 'queued' | 'running' | 'waiting_approval' | 'succeeded' | 'failed' | 'cancelled';
+
+/**
+ * RunTrigger
+ */
+export type RunTrigger = 'playground' | 'api' | 'eval';
+
+/**
+ * RunsPublic
+ */
+export type RunsPublic = {
+    /**
+     * Data
+     */
+    data: Array<RunPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * Token
  */
 export type Token = {
@@ -1162,6 +1335,142 @@ export type agentsReadVersionResponses = {
 };
 
 export type agentsReadVersionResponse = agentsReadVersionResponses[keyof agentsReadVersionResponses];
+
+export type runsReadRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Agent Version Id
+         */
+        agent_version_id?: string | null;
+        /**
+         * Status
+         */
+        status?: RunStatus | null;
+    };
+    url: '/api/v1/runs/';
+};
+
+export type runsReadRunsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type runsReadRunsError = runsReadRunsErrors[keyof runsReadRunsErrors];
+
+export type runsReadRunsResponses = {
+    /**
+     * Successful Response
+     */
+    200: RunsPublic;
+};
+
+export type runsReadRunsResponse = runsReadRunsResponses[keyof runsReadRunsResponses];
+
+export type runsCreateRunData = {
+    body: RunCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/runs/';
+};
+
+export type runsCreateRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type runsCreateRunError = runsCreateRunErrors[keyof runsCreateRunErrors];
+
+export type runsCreateRunResponses = {
+    /**
+     * Successful Response
+     */
+    200: RunPublic;
+};
+
+export type runsCreateRunResponse = runsCreateRunResponses[keyof runsCreateRunResponses];
+
+export type runsReadRunData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/runs/{id}';
+};
+
+export type runsReadRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type runsReadRunError = runsReadRunErrors[keyof runsReadRunErrors];
+
+export type runsReadRunResponses = {
+    /**
+     * Successful Response
+     */
+    200: RunPublic;
+};
+
+export type runsReadRunResponse = runsReadRunResponses[keyof runsReadRunResponses];
+
+export type runsReadEventsData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/runs/{id}/events';
+};
+
+export type runsReadEventsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type runsReadEventsError = runsReadEventsErrors[keyof runsReadEventsErrors];
+
+export type runsReadEventsResponses = {
+    /**
+     * Successful Response
+     */
+    200: RunEventsPublic;
+};
+
+export type runsReadEventsResponse = runsReadEventsResponses[keyof runsReadEventsResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;

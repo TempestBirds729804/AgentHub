@@ -17,8 +17,10 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutAgentsRouteImport } from './routes/_layout/agents'
+import { Route as LayoutRunsRouteImport } from './routes/_layout/runs'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutAgentsAgentIdRouteImport } from './routes/_layout/agents.$agentId'
+import { Route as LayoutRunsRunIdRouteImport } from './routes/_layout/runs.$runId'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -59,6 +61,11 @@ const LayoutAgentsRoute = LayoutAgentsRouteImport.update({
   path: '/agents',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutRunsRoute = LayoutRunsRouteImport.update({
+  id: '/runs',
+  path: '/runs',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -69,6 +76,11 @@ const LayoutAgentsAgentIdRoute = LayoutAgentsAgentIdRouteImport.update({
   path: '/$agentId',
   getParentRoute: () => LayoutAgentsRoute,
 } as any)
+const LayoutRunsRunIdRoute = LayoutRunsRunIdRouteImport.update({
+  id: '/$runId',
+  path: '/$runId',
+  getParentRoute: () => LayoutRunsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -78,8 +90,10 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/agents': typeof LayoutAgentsRouteWithChildren
+  '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/runs/$runId': typeof LayoutRunsRunIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -88,9 +102,11 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/agents': typeof LayoutAgentsRouteWithChildren
+  '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
   '/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/runs/$runId': typeof LayoutRunsRunIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,9 +117,11 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/agents': typeof LayoutAgentsRouteWithChildren
+  '/_layout/runs': typeof LayoutRunsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/_layout/runs/$runId': typeof LayoutRunsRunIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,8 +133,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/agents'
+    | '/runs'
     | '/settings'
     | '/agents/$agentId'
+    | '/runs/$runId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -125,9 +145,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/agents'
+    | '/runs'
     | '/settings'
     | '/'
     | '/agents/$agentId'
+    | '/runs/$runId'
   id:
     | '__root__'
     | '/_layout'
@@ -137,9 +159,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/agents'
+    | '/_layout/runs'
     | '/_layout/settings'
     | '/_layout/'
     | '/_layout/agents/$agentId'
+    | '/_layout/runs/$runId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -208,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAgentsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/runs': {
+      id: '/_layout/runs'
+      path: '/runs'
+      fullPath: '/runs'
+      preLoaderRoute: typeof LayoutRunsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -221,6 +252,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/agents/$agentId'
       preLoaderRoute: typeof LayoutAgentsAgentIdRouteImport
       parentRoute: typeof LayoutAgentsRoute
+    }
+    '/_layout/runs/$runId': {
+      id: '/_layout/runs/$runId'
+      path: '/$runId'
+      fullPath: '/runs/$runId'
+      preLoaderRoute: typeof LayoutRunsRunIdRouteImport
+      parentRoute: typeof LayoutRunsRoute
     }
   }
 }
@@ -237,9 +275,22 @@ const LayoutAgentsRouteWithChildren = LayoutAgentsRoute._addFileChildren(
   LayoutAgentsRouteChildren,
 )
 
+interface LayoutRunsRouteChildren {
+  LayoutRunsRunIdRoute: typeof LayoutRunsRunIdRoute
+}
+
+const LayoutRunsRouteChildren: LayoutRunsRouteChildren = {
+  LayoutRunsRunIdRoute: LayoutRunsRunIdRoute,
+}
+
+const LayoutRunsRouteWithChildren = LayoutRunsRoute._addFileChildren(
+  LayoutRunsRouteChildren,
+)
+
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutAgentsRoute: typeof LayoutAgentsRouteWithChildren
+  LayoutRunsRoute: typeof LayoutRunsRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
@@ -247,6 +298,7 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutAgentsRoute: LayoutAgentsRouteWithChildren,
+  LayoutRunsRoute: LayoutRunsRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }

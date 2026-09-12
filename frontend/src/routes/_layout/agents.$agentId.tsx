@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type AgentPublic, AgentsService } from "@/client"
+import RunAgent from "@/components/Runs/RunAgent"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -383,6 +384,10 @@ function Versions({ agentId }: { agentId: string }) {
                           : "—"}
                       </TableCell>
                       <TableCell className="text-right">
+                        <RunAgent
+                          versionId={version.id}
+                          versionNumber={version.version_number}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
