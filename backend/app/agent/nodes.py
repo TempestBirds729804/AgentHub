@@ -16,6 +16,7 @@ async def call_model(state: AgentState) -> dict[str, object]:
             model=state["llm_model"],
             temperature=state["llm_settings"].get("temperature"),
             max_tokens=state["llm_settings"].get("max_tokens"),
+            streaming=True,
         )
         response = await chat.ainvoke(messages)
         if not isinstance(response, AIMessage):

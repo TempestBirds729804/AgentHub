@@ -825,22 +825,22 @@ test.skip(!process.env.LLM_API_KEY, "Requires LLM_API_KEY")
 
 ## 阶段验收清单
 
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`
-- [ ] `docker compose exec db psql -U postgres -d app -c "\d run"` 里 `conversation_id` 有指向 conversation 的外键且 `ON DELETE SET NULL`
-- [ ] `uv run pytest tests/ -v` 全绿
-- [ ] 测试不产生真实网络请求（把 `LLM_BASE_URL` 改成无效地址后测试仍全绿）
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] `bun run lint` 通过
-- [ ] **手动验证流式效果**：Playground 里发一条消息，回复是**逐字出现**的而不是一次性整段出现。如果是整段出现，检查 `X-Accel-Buffering` 头和 `streaming=True`
-- [ ] 手动验证：执行中能看到 `call_model` 节点指示器
-- [ ] 手动验证：刷新页面后历史对话完整保留
-- [ ] 手动验证多轮上下文：第一轮说"我叫张三"，第二轮问"我叫什么"，回复正确
-- [ ] 手动验证断连：发消息后立刻关闭浏览器标签，检查数据库里那条 Run 的状态是 `cancelled` 而不是 `running`
-- [ ] 手动验证摘要：连发 30 条消息后查 `SELECT summary, summarized_up_to_seq FROM conversation`，summary 非空
-- [ ] `SELECT status, count(*) FROM run GROUP BY status;` 没有卡在 `running` 的记录
-- [ ] `SELECT count(*) FROM run_event WHERE event_type = 'model_chunk';` 返回 0
-- [ ] 在 Docker Compose 环境下（`docker compose watch`）也验证一次流式效果，确认 Traefik 没有缓冲
+- [x] `uv run alembic check` 输出 `No new upgrade operations detected.`
+- [x] `docker compose exec db psql -U postgres -d app -c "\d run"` 里 `conversation_id` 有指向 conversation 的外键且 `ON DELETE SET NULL`
+- [x] `uv run pytest tests/ -v` 全绿
+- [x] 测试不产生真实网络请求（把 `LLM_BASE_URL` 改成无效地址后测试仍全绿）
+- [x] `cd backend && bash scripts/lint.sh` 全绿
+- [x] `cd backend && bash scripts/test.sh` 全绿
+- [x] `bun run lint` 通过
+- [x] **手动验证流式效果**：Playground 里发一条消息，回复是**逐字出现**的而不是一次性整段出现。如果是整段出现，检查 `X-Accel-Buffering` 头和 `streaming=True`
+- [x] 手动验证：执行中能看到 `call_model` 节点指示器
+- [x] 手动验证：刷新页面后历史对话完整保留
+- [x] 手动验证多轮上下文：第一轮说"我叫张三"，第二轮问"我叫什么"，回复正确
+- [x] 手动验证断连：发消息后立刻关闭浏览器标签，检查数据库里那条 Run 的状态是 `cancelled` 而不是 `running`
+- [x] 手动验证摘要：连发 30 条消息后查 `SELECT summary, summarized_up_to_seq FROM conversation`，summary 非空
+- [x] `SELECT status, count(*) FROM run GROUP BY status;` 没有卡在 `running` 的记录
+- [x] `SELECT count(*) FROM run_event WHERE event_type = 'model_chunk';` 返回 0
+- [x] 在 Docker Compose 环境下（`docker compose watch`）也验证一次流式效果，确认 Traefik 没有缓冲
 
 ---
 
@@ -880,6 +880,18 @@ LangGraph 版本太老。检查装的版本，`v2` 事件格式在较新版本�
 
 ## 偏差记录
 
-- `astream_events` 使用的 version：
-- 上下文裁剪策略（条数 / token）：
+- 用户已确认：`ConvMessage.content` 是字符串长度规则的例外，显式使用 PostgreSQL `TEXT`，不设字符上限；输入仍限制为 20000 字符。
+- 配套文件范围：为满足既有级联关系、CRUD 分层与验证要求，修改 `models/user.py`、`models/agent.py`，新增 `crud/conversation.py`、`tests/utils/conversation.py`，并按需调整 Run 路由的 conversation_id 校验及相关测试，避免补外键后无效 ID 变成数据库错误。
+
+- `astream_events` 使用的 version：`v2`；保留阶段 03 的 `execute_run`，仅流式路径新增节点事件。
+- 上下文裁剪策略（条数 / token）：保留最近 20 条消息；达到 30 条后摘要前面的消息，按 `summarized_up_to_seq` 增量推进。摘要提交前重新加锁校验进度，避免慢请求覆盖较新的摘要。
 - 其它偏差：
+  - `message.role` 显式使用 `String(32)`；消息正文显式使用 `Text`；增加 `(conversation_id, seq)` 唯一约束。发送消息先锁定会话，已有 queued/running Run 时返回 409，执行期间删除会话也返回 409。
+  - 助手消息与 succeeded Run 在同一事务提交后才发送 `run_finished`，保证客户端收到终止事件时可以读取完整历史。断连清理使用屏蔽取消的作用域，避免 Starlette 的取消作用域打断取消状态落库；生成器提前关闭也会清理 Run。
+  - 流式响应使用独立 AsyncSession，避免依赖生命周期提前关闭会话；组装上下文后将图中的 system_prompt 置空，避免重复注入系统提示词。
+  - 新增 `backend/tests/agent/test_stream.py` 验证取消/提前关闭，以及 `frontend/tests/sse.spec.ts` 验证 UTF-8 字节拆分、跨边界事件、多行 data、HTTP 错误与 reader 释放。Playground 通过 URL search 保留选中的会话，历史消息分页读全；事件面板只保留非 token 事件，token 直接显示在气泡。
+  - Windows 无可用 bash，使用 lint/test/generate-client 脚本内部等价命令。客户端由 OpenAPI 生成器生成；生成器输出的空白行未手工修改。
+  - 2026-09-16 验证：独立数据库 `agenthub_phase04_test` 中完整后端测试 106 项通过，设置 `LLM_BASE_URL=http://127.0.0.1:1/v1` 后依然通过，coverage 89%；mypy、ty、ruff、Biome、前端生产构建通过。迁移在独立测试库 downgrade/upgrade 往返成功，实际 app 库 Alembic check 无差异，确认 Run 外键为 `ON DELETE SET NULL`。
+  - 浏览器验证：登录、Agent 管理、Run 成功/失败、Playground 真实多轮流式、SSE 解析共 7 项 Playwright 通过。通过 DOM 变化记录确认回复持续增长，刷新后正文一致，第二轮正确回答“张三”，关页后轮询确认 Run 为 cancelled；查看截图确认页面布局。真实模型测试受 `LLM_API_KEY` 环境变量控制。
+  - 真实摘要验证：15 轮共 30 条消息，会话 `90d5c41d-dc7d-4f60-9a29-e7054baea822` 的摘要长 190 字符，`summarized_up_to_seq=10`。验证数据保留在本地 app 数据库。数据库既有 collation 版本告警未修改。
+  - Docker 验证：镜像构建成功，`docker compose watch --no-up backend` 运行期间，经 `http://localhost` 的 Traefik 发起真实 SSE 请求，Run `838b4efa-b7c6-467a-9a67-ee8f9da80785` 收到 254 个分片，首/末分片分别在 5.833/6.616 秒到达，输入/输出 Token 为 56/977，费用为 $0.001189；断开代理连接后 Run `2091a4b0-c681-4c29-a49e-226b0436f6c8` 为 cancelled。该演示会话 `582645e5-66c8-4e51-80b0-af8ff2c247a3` 保留供复核。

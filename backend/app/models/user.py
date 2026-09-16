@@ -10,6 +10,7 @@ from app.models.base import get_datetime_utc
 
 if TYPE_CHECKING:
     from app.models.agent import Agent
+    from app.models.conversation import Conversation
     from app.models.run import Run
 
 
@@ -49,6 +50,9 @@ class UpdatePassword(SQLModel):
 
 
 class User(UserBase, table=True):
+    conversations: list["Conversation"] = Relationship(  # noqa: UP037
+        back_populates="owner", cascade_delete=True
+    )
     runs: list["Run"] = Relationship(back_populates="owner", cascade_delete=True)  # noqa: UP037
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str

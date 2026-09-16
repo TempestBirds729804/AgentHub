@@ -13,6 +13,7 @@ from app.api.deps import AsyncSessionDep, CurrentUser, SessionDep
 from app.models import (
     Agent,
     AgentVersion,
+    Conversation,
     Run,
     RunCreate,
     RunEvent,
@@ -61,6 +62,16 @@ async def create_run(
     version, agent = await _get_owned_version(
         session=session, current_user=current_user, version_id=run_in.agent_version_id
     )
+    if run_in.conversation_id is not None:
+        conversation = await session.get(Conversation, run_in.conversation_id)
+        if conversation is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        if not current_user.is_superuser and conversation.owner_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+        if conversation.agent_id != agent.id:
+            raise HTTPException(
+                status_code=400, detail="Conversation belongs to another agent"
+            )
     try:
         snapshot = AgentSnapshot.model_validate(version.snapshot)
     except ValidationError:

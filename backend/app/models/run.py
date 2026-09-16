@@ -59,7 +59,9 @@ class Run(SQLModel, table=True):
     agent_version_id: uuid.UUID = Field(
         foreign_key="agent_version.id", nullable=False, ondelete="CASCADE", index=True
     )
-    conversation_id: uuid.UUID | None = Field(default=None, index=True)
+    conversation_id: uuid.UUID | None = Field(
+        default=None, foreign_key="conversation.id", ondelete="SET NULL", index=True
+    )
     # SQLModel otherwise infers a native SQLAlchemy Enum even for str enums.
     status: RunStatus = Field(default=RunStatus.QUEUED, sa_type=String(32), index=True)  # type: ignore
     trigger: RunTrigger = Field(default=RunTrigger.PLAYGROUND, sa_type=String(32))  # type: ignore

@@ -9,6 +9,7 @@ from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 from app.models.base import get_datetime_utc
 
 if TYPE_CHECKING:
+    from app.models.conversation import Conversation
     from app.models.run import Run
     from app.models.user import User
 
@@ -40,6 +41,9 @@ class AgentUpdate(SQLModel):
 
 
 class Agent(AgentBase, table=True):
+    conversations: list["Conversation"] = Relationship(  # noqa: UP037
+        back_populates="agent", cascade_delete=True
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE", index=True

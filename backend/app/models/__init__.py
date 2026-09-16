@@ -19,6 +19,19 @@ from app.models.base import (
     TokenPayload,
     get_datetime_utc,
 )
+from app.models.conversation import (
+    Conversation,
+    ConversationBase,
+    ConversationCreate,
+    ConversationPublic,
+    ConversationsPublic,
+    ConversationUpdate,
+    ConvMessage,
+    ConvMessagePublic,
+    ConvMessagesPublic,
+    MessageRole,
+    StreamMessageRequest,
+)
 from app.models.run import (
     Run,
     RunCreate,
@@ -44,6 +57,17 @@ from app.models.user import (
 )
 
 __all__ = [
+    "Conversation",
+    "ConversationBase",
+    "ConversationCreate",
+    "ConversationUpdate",
+    "ConversationPublic",
+    "ConversationsPublic",
+    "ConvMessage",
+    "ConvMessagePublic",
+    "ConvMessagesPublic",
+    "MessageRole",
+    "StreamMessageRequest",
     "Run",
     "RunCreate",
     "RunEvent",
@@ -86,3 +110,5 @@ AgentVersion.model_rebuild()
 User.model_rebuild()
 Run.model_rebuild()
 RunEvent.model_rebuild()
+Conversation.model_rebuild()
+ConvMessage.model_rebuild()

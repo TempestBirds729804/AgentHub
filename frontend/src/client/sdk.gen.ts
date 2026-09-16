@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, conversationsCreateConversationData, conversationsCreateConversationErrors, conversationsCreateConversationResponses, conversationsDeleteConversationData, conversationsDeleteConversationErrors, conversationsDeleteConversationResponses, conversationsReadConversationData, conversationsReadConversationErrors, conversationsReadConversationResponses, conversationsReadConversationsData, conversationsReadConversationsErrors, conversationsReadConversationsResponses, conversationsReadMessagesData, conversationsReadMessagesErrors, conversationsReadMessagesResponses, conversationsStreamMessageData, conversationsStreamMessageErrors, conversationsStreamMessageResponses, conversationsUpdateConversationData, conversationsUpdateConversationErrors, conversationsUpdateConversationResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -468,6 +468,117 @@ export class RunsService {
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/runs/{id}/events',
             ...options
+        });
+    }
+}
+
+export class ConversationsService {
+    /**
+     * Read Conversations
+     *
+     * Retrieve conversations with message counts.
+     */
+    public static readConversations<ThrowOnError extends boolean = true>(options?: Options<conversationsReadConversationsData, ThrowOnError>) {
+        return (options?.client ?? client).get<conversationsReadConversationsResponses, conversationsReadConversationsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/conversations/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Conversation
+     *
+     * Create an empty conversation for an accessible agent.
+     */
+    public static createConversation<ThrowOnError extends boolean = true>(options: Options<conversationsCreateConversationData, ThrowOnError>) {
+        return (options.client ?? client).post<conversationsCreateConversationResponses, conversationsCreateConversationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/conversations/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Conversation
+     *
+     * Delete a conversation and its messages while retaining runs.
+     */
+    public static deleteConversation<ThrowOnError extends boolean = true>(options: Options<conversationsDeleteConversationData, ThrowOnError>) {
+        return (options.client ?? client).delete<conversationsDeleteConversationResponses, conversationsDeleteConversationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/conversations/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Conversation
+     *
+     * Retrieve a conversation by ID.
+     */
+    public static readConversation<ThrowOnError extends boolean = true>(options: Options<conversationsReadConversationData, ThrowOnError>) {
+        return (options.client ?? client).get<conversationsReadConversationResponses, conversationsReadConversationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/conversations/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Conversation
+     *
+     * Update a conversation title.
+     */
+    public static updateConversation<ThrowOnError extends boolean = true>(options: Options<conversationsUpdateConversationData, ThrowOnError>) {
+        return (options.client ?? client).patch<conversationsUpdateConversationResponses, conversationsUpdateConversationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/conversations/{id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Messages
+     *
+     * Retrieve conversation messages in sequence order.
+     */
+    public static readMessages<ThrowOnError extends boolean = true>(options: Options<conversationsReadMessagesData, ThrowOnError>) {
+        return (options.client ?? client).get<conversationsReadMessagesResponses, conversationsReadMessagesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/conversations/{id}/messages',
+            ...options
+        });
+    }
+    
+    /**
+     * Stream Message
+     *
+     * Send a message and stream graph events using authenticated fetch SSE.
+     */
+    public static streamMessage<ThrowOnError extends boolean = true>(options: Options<conversationsStreamMessageData, ThrowOnError>) {
+        return (options.client ?? client).post<conversationsStreamMessageResponses, conversationsStreamMessageErrors, ThrowOnError>({
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/conversations/{conversation_id}/stream',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
 }
