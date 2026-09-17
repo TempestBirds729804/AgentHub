@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, conversationsCreateConversationData, conversationsCreateConversationErrors, conversationsCreateConversationResponses, conversationsDeleteConversationData, conversationsDeleteConversationErrors, conversationsDeleteConversationResponses, conversationsReadConversationData, conversationsReadConversationErrors, conversationsReadConversationResponses, conversationsReadConversationsData, conversationsReadConversationsErrors, conversationsReadConversationsResponses, conversationsReadMessagesData, conversationsReadMessagesErrors, conversationsReadMessagesResponses, conversationsStreamMessageData, conversationsStreamMessageErrors, conversationsStreamMessageResponses, conversationsUpdateConversationData, conversationsUpdateConversationErrors, conversationsUpdateConversationResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, conversationsCreateConversationData, conversationsCreateConversationErrors, conversationsCreateConversationResponses, conversationsDeleteConversationData, conversationsDeleteConversationErrors, conversationsDeleteConversationResponses, conversationsReadConversationData, conversationsReadConversationErrors, conversationsReadConversationResponses, conversationsReadConversationsData, conversationsReadConversationsErrors, conversationsReadConversationsResponses, conversationsReadMessagesData, conversationsReadMessagesErrors, conversationsReadMessagesResponses, conversationsStreamMessageData, conversationsStreamMessageErrors, conversationsStreamMessageResponses, conversationsUpdateConversationData, conversationsUpdateConversationErrors, conversationsUpdateConversationResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCancelRunData, runsCancelRunErrors, runsCancelRunResponses, runsCreateAsyncRunData, runsCreateAsyncRunErrors, runsCreateAsyncRunResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, runsRetryRunData, runsRetryRunErrors, runsRetryRunResponses, runsStreamRunEventsData, runsStreamRunEventsErrors, runsStreamRunEventsResponses, toolsCreateToolData, toolsCreateToolErrors, toolsCreateToolResponses, toolsDeleteToolData, toolsDeleteToolErrors, toolsDeleteToolResponses, toolsReadBuiltinFunctionsData, toolsReadBuiltinFunctionsResponses, toolsReadToolData, toolsReadToolErrors, toolsReadToolResponses, toolsReadToolsData, toolsReadToolsErrors, toolsReadToolsResponses, toolsTestToolData, toolsTestToolErrors, toolsTestToolResponses, toolsUpdateToolData, toolsUpdateToolErrors, toolsUpdateToolResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,118 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: Record<string, unknown>;
 };
+
+export class ToolsService {
+    /**
+     * Read Builtin Functions
+     *
+     * List available built-in functions.
+     */
+    public static readBuiltinFunctions<ThrowOnError extends boolean = true>(options?: Options<toolsReadBuiltinFunctionsData, ThrowOnError>) {
+        return (options?.client ?? client).get<toolsReadBuiltinFunctionsResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/tools/builtin-functions',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Tools
+     *
+     * Retrieve tools filtered by type and active status.
+     */
+    public static readTools<ThrowOnError extends boolean = true>(options?: Options<toolsReadToolsData, ThrowOnError>) {
+        return (options?.client ?? client).get<toolsReadToolsResponses, toolsReadToolsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/tools/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Tool
+     *
+     * Create a validated tool definition.
+     */
+    public static createTool<ThrowOnError extends boolean = true>(options: Options<toolsCreateToolData, ThrowOnError>) {
+        return (options.client ?? client).post<toolsCreateToolResponses, toolsCreateToolErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/tools/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Tool
+     *
+     * Delete a tool unless a published version references it.
+     */
+    public static deleteTool<ThrowOnError extends boolean = true>(options: Options<toolsDeleteToolData, ThrowOnError>) {
+        return (options.client ?? client).delete<toolsDeleteToolResponses, toolsDeleteToolErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/tools/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Tool
+     *
+     * Get a tool by ID.
+     */
+    public static readTool<ThrowOnError extends boolean = true>(options: Options<toolsReadToolData, ThrowOnError>) {
+        return (options.client ?? client).get<toolsReadToolResponses, toolsReadToolErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/tools/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Tool
+     *
+     * Update and revalidate a tool definition.
+     */
+    public static updateTool<ThrowOnError extends boolean = true>(options: Options<toolsUpdateToolData, ThrowOnError>) {
+        return (options.client ?? client).patch<toolsUpdateToolResponses, toolsUpdateToolErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/tools/{id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Test Tool
+     *
+     * Test a tool with validated arguments.
+     */
+    public static testTool<ThrowOnError extends boolean = true>(options: Options<toolsTestToolData, ThrowOnError>) {
+        return (options.client ?? client).post<toolsTestToolResponses, toolsTestToolErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/tools/{id}/test',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
 
 export class LoginService {
     /**
@@ -411,6 +523,65 @@ export class AgentsService {
 }
 
 export class RunsService {
+    /**
+     * Create Async Run
+     *
+     * Submit long-running production work; use conversation streaming for Playground debugging.
+     */
+    public static createAsyncRun<ThrowOnError extends boolean = true>(options: Options<runsCreateAsyncRunData, ThrowOnError>) {
+        return (options.client ?? client).post<runsCreateAsyncRunResponses, runsCreateAsyncRunErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/runs/async',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Cancel Run
+     *
+     * Cancel async work at the next node boundary; stop Playground streams at their source.
+     */
+    public static cancelRun<ThrowOnError extends boolean = true>(options: Options<runsCancelRunData, ThrowOnError>) {
+        return (options.client ?? client).post<runsCancelRunResponses, runsCancelRunErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/runs/{id}/cancel',
+            ...options
+        });
+    }
+    
+    /**
+     * Retry Run
+     *
+     * Retry failed/cancelled work in place, optionally starting with a fresh checkpoint thread.
+     */
+    public static retryRun<ThrowOnError extends boolean = true>(options: Options<runsRetryRunData, ThrowOnError>) {
+        return (options.client ?? client).post<runsRetryRunResponses, runsRetryRunErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/runs/{id}/retry',
+            ...options
+        });
+    }
+    
+    /**
+     * Stream Run Events
+     *
+     * Replay buffered async Run events and stream new progress with authenticated fetch SSE.
+     */
+    public static streamRunEvents<ThrowOnError extends boolean = true>(options: Options<runsStreamRunEventsData, ThrowOnError>) {
+        return (options.client ?? client).get<runsStreamRunEventsResponses, runsStreamRunEventsErrors, ThrowOnError>({
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/runs/{id}/stream',
+            ...options
+        });
+    }
+    
     /**
      * Read Runs
      *

@@ -378,13 +378,14 @@ bun run lint
 | [docs/dev/03-langgraph-runtime.md](docs/dev/03-langgraph-runtime.md) | 模型适配器、最小状态图、Run 模型、同步执行 | 02 |
 | [docs/dev/04-conversation-streaming.md](docs/dev/04-conversation-streaming.md) | 会话记忆、上下文裁剪、SSE 流式、Playground | 03 |
 | [docs/dev/05-tools.md](docs/dev/05-tools.md) | Function / HTTP / MCP 工具系统、ToolNode 接入 | 04 |
-| [docs/dev/06-async-worker.md](docs/dev/06-async-worker.md) | arq worker、异步 Run、Checkpoint 恢复、限流 | 05 |
+| [docs/dev/05_1-mcp-service.md](docs/dev/05_1-mcp-service.md) | 独立只读 MCP 服务、Streamable HTTP、真实工具调用验收 | 05 |
+| [docs/dev/06-async-worker.md](docs/dev/06-async-worker.md) | arq worker、异步 Run、Checkpoint 恢复、限流 | 05_1 |
 | [docs/dev/07-approval.md](docs/dev/07-approval.md) | 高风险工具拦截、interrupt 暂停、审批链路 | 06 |
 | [docs/dev/08-rag.md](docs/dev/08-rag.md) | 文档上传、切片 Embedding、向量检索、来源引用 | 06 |
 | [docs/dev/09-eval.md](docs/dev/09-eval.md) | 测试用例、跨版本批量评测、结果对比 | 06 |
 | [docs/dev/10-observability.md](docs/dev/10-observability.md) | OpenTelemetry、Prometheus、Grafana、监控页 | 06 |
 
-阶段 07 / 08 / 09 / 10 都只依赖 06，彼此独立，可以按需调整先后顺序。
+主干顺序为 01 → 02 → 03 → 04 → 05 → 05_1 → 06。阶段 07 / 08 / 09 / 10 都只直接依赖 06，彼此独立，可以按需调整先后顺序。
 
 ---
 

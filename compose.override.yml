@@ -36,6 +36,12 @@ services:
       - "9000:9000"
       - "9001:9001"
 
+  mcp-docs:
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - ./docs/dev:/app/mcp-docs:ro
+
   adminer:
     ports:
       - "8080:8080"
@@ -76,6 +82,22 @@ services:
       SMTP_HOST: "mailpit"
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
+
+  worker:
+    environment:
+      FASTAPI_ENV: "development"
+    develop:
+      watch:
+        - path: ./backend
+          action: sync+restart
+          target: /app/backend
+          ignore:
+            - .venv
+            - tests
+            - htmlcov
+            - .coverage*
+        - path: ./backend/pyproject.toml
+          action: rebuild
 
   mailpit:
     image: axllent/mailpit

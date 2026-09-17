@@ -76,6 +76,7 @@ class Run(SQLModel, table=True):
     cost_usd: Decimal | None = Field(default=None, sa_type=Numeric(12, 6))  # type: ignore
     thread_id: str | None = Field(default=None, max_length=128, index=True)
     checkpoint_id: str | None = Field(default=None, max_length=128)
+    retry_count: int = Field(default=0, ge=0, sa_column_kwargs={"server_default": "0"})
     created_at: datetime = Field(
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
@@ -106,6 +107,9 @@ class RunPublic(SQLModel):
     created_at: datetime
     agent_name: str | None = None
     agent_version_number: int | None = None
+    thread_id: str | None = None
+    checkpoint_id: str | None = None
+    retry_count: int = 0
 
 
 class RunsPublic(SQLModel):

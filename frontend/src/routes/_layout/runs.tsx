@@ -18,6 +18,12 @@ function RunsTable() {
     queryKey: ["runs"],
     queryFn: async () =>
       (await RunsService.readRuns({ query: { skip: 0, limit: 100 } })).data,
+    refetchInterval: (query) =>
+      query.state.data?.data.some(
+        (run) => run.status === "queued" || run.status === "running",
+      )
+        ? 3000
+        : false,
   })
   if (!runs.data.length)
     return (

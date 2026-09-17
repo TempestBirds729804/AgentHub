@@ -5,17 +5,20 @@ export interface SSEEvent {
 
 export async function* streamSSE(
   url: string,
-  body: unknown,
-  signal?: AbortSignal,
+  options: {
+    method?: "GET" | "POST"
+    body?: unknown
+    signal?: AbortSignal
+  } = {},
 ): AsyncGenerator<SSEEvent> {
   const response = await fetch(url, {
-    method: "POST",
+    method: options.method ?? "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${localStorage.getItem("access_token") ?? ""}`,
     },
-    body: JSON.stringify(body),
-    signal,
+    body: options.method === "GET" ? undefined : JSON.stringify(options.body),
+    signal: options.signal,
   })
   if (!response.ok || !response.body) {
     const error = await response.json().catch(() => null)

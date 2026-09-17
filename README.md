@@ -1,5 +1,7 @@
 # AgentHub
 
+Function 工具仅执行平台内置白名单函数（calculator、current_time），不执行用户提交的 Python 代码。外部能力支持 HTTP、MCP Streamable HTTP 和旧 SSE 工具。独立 `mcp-docs` 服务提供开发文档搜索与读取，启动和配置见 [开发说明](development.md#independent-mcp-document-service)。HTTP/MCP 默认禁止访问内网，仅部署方指定的 MCP 端点可定向放行；MCP stdio 禁用，`requires_approval` 的实际拦截在阶段 07 实现。
+
 AgentHub is an AI Agent management and execution platform built on FastAPI and React. It keeps the template's authentication and administration capabilities while adding a stateful LangGraph runtime, versioned Agent definitions, execution tracing, tools, approval workflows, and knowledge retrieval.
 
 ## Capabilities

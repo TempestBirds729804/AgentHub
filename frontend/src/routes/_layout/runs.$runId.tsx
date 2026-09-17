@@ -1,12 +1,22 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeft } from "lucide-react"
+import { useEffect, useState } from "react"
 
-import { RunsService } from "@/client"
+import { type RunEventPublic, RunsService } from "@/client"
 import RunStatusBadge from "@/components/Runs/RunStatusBadge"
+import ToolTrace from "@/components/Tools/ToolTrace"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { LoadingButton } from "@/components/ui/loading-button"
+import useCustomToast from "@/hooks/useCustomToast"
+import { streamSSE } from "@/lib/sse"
+import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/runs/$runId")({
   component: RunDetail,
@@ -20,16 +30,107 @@ function displayContent(value: unknown) {
 
 function RunDetail() {
   const { runId } = Route.useParams()
+  const queryClient = useQueryClient()
+  const { showErrorToast } = useCustomToast()
+  const [liveEvents, setLiveEvents] = useState<RunEventPublic[]>([])
+  const [liveText, setLiveText] = useState("")
+  const [streamError, setStreamError] = useState("")
   const { data: run } = useSuspenseQuery({
     queryKey: ["runs", runId],
     queryFn: async () =>
       (await RunsService.readRun({ path: { id: runId } })).data,
+    refetchInterval: (query) =>
+      query.state.data?.status === "queued" ||
+      query.state.data?.status === "running"
+        ? 3000
+        : false,
   })
   const { data: events } = useSuspenseQuery({
     queryKey: ["runs", runId, "events"],
-    queryFn: async () =>
-      (await RunsService.readEvents({ path: { id: runId } })).data,
+    queryFn: async () => {
+      const data: RunEventPublic[] = []
+      let count = 0
+      do {
+        const page = (
+          await RunsService.readEvents({
+            path: { id: runId },
+            query: { skip: data.length, limit: 100 },
+          })
+        ).data
+        count = page.count
+        data.push(...page.data)
+        if (!page.data.length) break
+      } while (data.length < count)
+      return { data, count }
+    },
   })
+  const active = run.status === "queued" || run.status === "running"
+  const asyncRun = run.thread_id?.startsWith(`run-${runId}-`) ?? false
+  const action = useMutation({
+    mutationFn: (operation: "cancel" | "retry" | "fresh") =>
+      operation === "cancel"
+        ? RunsService.cancelRun({ path: { id: runId } })
+        : RunsService.retryRun({
+            path: { id: runId },
+            query: { fresh: operation === "fresh" },
+          }),
+    onSuccess: (response) => {
+      queryClient.setQueryData(["runs", runId], response.data)
+    },
+    onError: handleError.bind(showErrorToast),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["runs"] }),
+  })
+  const attempt = run.retry_count ?? 0
+  useEffect(() => {
+    if (!active || !asyncRun) {
+      queryClient.invalidateQueries({ queryKey: ["runs", runId, "events"] })
+      return
+    }
+    const controller = new AbortController()
+    setLiveEvents([])
+    setLiveText("")
+    setStreamError("")
+    async function follow() {
+      let seq = 0
+      try {
+        for await (const event of streamSSE(
+          `${import.meta.env.VITE_API_URL ?? ""}/api/v1/runs/${runId}/stream`,
+          { method: "GET", signal: controller.signal },
+        )) {
+          const payload = event.data as Record<string, unknown>
+          if (event.event === "model_chunk") {
+            setLiveText((previous) => previous + String(payload.text ?? ""))
+          } else {
+            if (event.event === "node_started" && payload.node === "call_model")
+              setLiveText("")
+            const current: RunEventPublic = {
+              id: `${runId}-${attempt}-${seq}`,
+              run_id: runId,
+              seq: seq++,
+              event_type: event.event as RunEventPublic["event_type"],
+              node_name: typeof payload.node === "string" ? payload.node : null,
+              payload,
+              created_at: new Date().toISOString(),
+            }
+            setLiveEvents((previous) => [...previous, current])
+          }
+          if (event.event === "run_finished" || event.event === "run_failed")
+            break
+        }
+      } catch (error) {
+        if (!controller.signal.aborted)
+          setStreamError(
+            error instanceof Error ? error.message : "Live updates unavailable",
+          )
+      } finally {
+        if (!controller.signal.aborted)
+          queryClient.invalidateQueries({ queryKey: ["runs", runId] })
+      }
+    }
+    void follow()
+    return () => controller.abort()
+  }, [active, asyncRun, runId, attempt, queryClient])
+  const trace = active && liveEvents.length ? liveEvents : events.data
   const startedAt = new Date(run.started_at ?? run.created_at).getTime()
   return (
     <div className="flex flex-col gap-6">
@@ -53,6 +154,55 @@ function RunDetail() {
           <CardTitle>Overview</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {active && asyncRun && (
+            <div className="space-y-2">
+              <LoadingButton
+                loading={action.isPending}
+                onClick={() => action.mutate("cancel")}
+              >
+                {action.isPending ? "Cancelling…" : "Cancel"}
+              </LoadingButton>
+              <p className="text-sm text-muted-foreground">
+                Cancellation takes effect at the next node boundary.
+              </p>
+            </div>
+          )}
+          {(run.status === "failed" || run.status === "cancelled") && (
+            <div
+              className="flex flex-wrap gap-2"
+              title={attempt >= 3 ? "Retry limit of 3 reached" : undefined}
+            >
+              {run.checkpoint_id && (
+                <LoadingButton
+                  disabled={attempt >= 3 || action.isPending}
+                  loading={action.isPending && action.variables === "retry"}
+                  onClick={() => action.mutate("retry")}
+                >
+                  Retry from checkpoint
+                </LoadingButton>
+              )}
+              <LoadingButton
+                variant="outline"
+                disabled={attempt >= 3 || action.isPending}
+                loading={action.isPending && action.variables === "fresh"}
+                onClick={() => action.mutate("fresh")}
+              >
+                Run again from scratch
+              </LoadingButton>
+              {attempt >= 3 && (
+                <p className="text-sm text-muted-foreground">
+                  Retry limit of 3 reached.
+                </p>
+              )}
+            </div>
+          )}
+          {streamError && (
+            <Alert>
+              <AlertDescription>
+                {streamError}. Status continues to refresh.
+              </AlertDescription>
+            </Alert>
+          )}
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
               <dt className="mb-1 text-sm text-muted-foreground">Status</dt>
@@ -96,12 +246,21 @@ function RunDetail() {
               </AlertDescription>
             </Alert>
           )}
+          {run.output?.truncated_by_max_iterations === true && (
+            <Alert>
+              <AlertTitle>Iteration limit reached</AlertTitle>
+              <AlertDescription>
+                Some tool calls were not executed because the maximum iteration
+                count was reached.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
       <div className="grid gap-6 lg:grid-cols-2">
         {[
           ["Input", run.input.message],
-          ["Output", run.output?.content],
+          ["Output", active && liveText ? liveText : run.output?.content],
         ].map(([title, value]) => (
           <Card key={String(title)} className="min-w-0">
             <CardHeader>
@@ -120,8 +279,15 @@ function RunDetail() {
           <CardTitle>Execution trace</CardTitle>
         </CardHeader>
         <CardContent>
+          <ToolTrace
+            events={trace.map((event) => ({
+              event: event.event_type,
+              data: event.payload,
+            }))}
+            running={active}
+          />
           <ol className="space-y-3">
-            {events.data.map((event) => (
+            {trace.map((event) => (
               <li key={event.id}>
                 <details className="rounded-md border p-3">
                   <summary className="flex cursor-pointer flex-wrap items-center gap-3 text-sm">
@@ -131,12 +297,9 @@ function RunDetail() {
                     <span className="font-medium">{event.event_type}</span>
                     {event.node_name && <span>{event.node_name}</span>}
                     <span className="ml-auto font-mono text-xs text-muted-foreground">
-                      +
-                      {Math.max(
-                        0,
-                        new Date(event.created_at).getTime() - startedAt,
-                      )}{" "}
-                      ms
+                      {active && liveEvents.length
+                        ? "Live"
+                        : `+${Math.max(0, new Date(event.created_at).getTime() - startedAt)} ms`}
                     </span>
                   </summary>
                   <pre className="mt-3 max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">
@@ -146,7 +309,7 @@ function RunDetail() {
               </li>
             ))}
           </ol>
-          {events.count === 0 && (
+          {trace.length === 0 && (
             <p className="text-muted-foreground">No events recorded.</p>
           )}
         </CardContent>

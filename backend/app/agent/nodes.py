@@ -1,11 +1,14 @@
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
+from langchain_core.tools import StructuredTool
 
 from app.agent.exceptions import AgentError, ModelCallError
 from app.agent.models import get_provider
 from app.agent.state import AgentState
 
 
-async def call_model(state: AgentState) -> dict[str, object]:
+async def call_model(
+    state: AgentState, *, tools: list[StructuredTool] | None = None
+) -> dict[str, object]:
     """Call the model without persisting the temporary system message."""
     messages: list[BaseMessage] = []
     if state["system_prompt"]:
@@ -18,7 +21,7 @@ async def call_model(state: AgentState) -> dict[str, object]:
             max_tokens=state["llm_settings"].get("max_tokens"),
             streaming=True,
         )
-        response = await chat.ainvoke(messages)
+        response = await (chat.bind_tools(tools) if tools else chat).ainvoke(messages)
         if not isinstance(response, AIMessage):
             raise ModelCallError("Model did not return an AI message")
     except AgentError:

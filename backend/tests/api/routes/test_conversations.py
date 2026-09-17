@@ -5,11 +5,14 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.outputs import ChatGenerationChunk
 from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.models import (
+    Agent,
+    AgentToolBinding,
     AgentVersion,
     Conversation,
     ConvMessage,
@@ -20,8 +23,90 @@ from app.models import (
 )
 from tests.utils.conversation import create_random_conversation
 from tests.utils.sse import _parse_sse
+from tests.utils.tool import create_random_tool
 
 URL = f"{settings.API_V1_STR}/conversations/"
+
+
+@pytest.mark.parametrize("truncate", [False, True])
+def test_stream_tools(
+    client: TestClient,
+    db: Session,
+    normal_user_token_headers: dict[str, str],
+    fake_chat_model: GenericFakeChatModel,
+    monkeypatch: pytest.MonkeyPatch,
+    truncate: bool,
+) -> None:
+    conv = own_conversation(db)
+    agent = db.get(Agent, conv.agent_id)
+    assert agent is not None
+    tool = create_random_tool(db, agent.owner_id)
+    version = db.exec(
+        select(AgentVersion).where(AgentVersion.agent_id == agent.id)
+    ).one()
+    if truncate:
+        version.snapshot = {**version.snapshot, "max_iterations": 1}
+        db.add(version)
+    db.add(AgentToolBinding(agent_version_id=version.id, tool_id=tool.id))
+    db.commit()
+
+    def bind(
+        self: GenericFakeChatModel, *_args: Any, **_kwargs: Any
+    ) -> GenericFakeChatModel:
+        return self
+
+    monkeypatch.setattr(GenericFakeChatModel, "bind_tools", bind)
+
+    def stream_tools(self: GenericFakeChatModel, *_args: Any, **_kwargs: Any) -> Any:
+        message = next(self.messages)
+        assert isinstance(message, AIMessage)
+        yield ChatGenerationChunk(
+            message=AIMessageChunk(
+                content=message.content, tool_calls=message.tool_calls
+            )
+        )
+
+    monkeypatch.setattr(GenericFakeChatModel, "_stream", stream_tools)
+    fake_chat_model.messages = iter(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {"name": tool.name, "args": {"expression": "2*21"}, "id": "call_a"},
+                    {"name": tool.name, "args": {"expression": "3*21"}, "id": "call_b"},
+                ],
+            ),
+            AIMessage(content="42 and 63"),
+            AIMessage(content="next reply"),
+        ]
+    )
+    response = client.post(
+        URL + str(conv.id) + "/stream",
+        headers=normal_user_token_headers,
+        json={"message": "calculate"},
+    )
+    events = _parse_sse(response.text)
+    assert events[-1]["event"] == "run_finished", events
+    assert events[-1]["data"]["truncated_by_max_iterations"] == truncate
+    run_id = uuid.UUID(events[0]["data"]["run_id"])
+    stored = db.exec(select(RunEvent).where(RunEvent.run_id == run_id)).all()
+    if not truncate:
+        called = [e["data"] for e in events if e["event"] == "tool_called"]
+        results = [e["data"] for e in events if e["event"] == "tool_result"]
+        assert len(called) == len(results) == 2
+        assert {r["index"] for r in results} == {0, 1}
+        assert all(r["ok"] and r["duration_ms"] >= 0 for r in results)
+        assert {e.event_type for e in stored} >= {"tool_called", "tool_result"}
+    history = client.get(
+        URL + str(conv.id) + "/messages", headers=normal_user_token_headers
+    ).json()["data"]
+    assert not history[-1]["tool_calls"]
+    followup = client.post(
+        URL + str(conv.id) + "/stream",
+        headers=normal_user_token_headers,
+        json={"message": "continue"},
+    )
+    assert _parse_sse(followup.text)[-1]["event"] == "run_finished"
 
 
 def own_conversation(db: Session, *, published: bool = True) -> Conversation:

@@ -26,7 +26,7 @@ test("SSE preserves UTF-8 and event boundaries across byte-sized chunks", async 
   try {
     const events = []
     for await (const event of streamSSE("http://example.test", {
-      message: "hi",
+      body: { message: "hi" },
     }))
       events.push(event)
     expect(events).toEqual([

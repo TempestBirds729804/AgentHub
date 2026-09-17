@@ -12,15 +12,48 @@ from app.models import (
     AgentCreate,
     AgentPublic,
     AgentsPublic,
+    AgentToolBinding,
     AgentUpdate,
     AgentVersion,
     AgentVersionCreate,
     AgentVersionPublic,
     AgentVersionsPublic,
     Message,
+    Tool,
 )
 
 router = APIRouter(prefix="/agents", tags=["agents"])
+
+
+def _validate_tool_ids(
+    *, session: SessionDep, current_user: CurrentUser, tool_ids: list[uuid.UUID]
+) -> None:
+    statement = select(Tool).where(col(Tool.id).in_(tool_ids)).with_for_update()
+    if not current_user.is_superuser:
+        statement = statement.where(Tool.owner_id == current_user.id)
+    tools = session.exec(statement).all()
+    if len(tools) != len(set(tool_ids)):
+        raise HTTPException(
+            status_code=400, detail="Some tool ids are invalid or not owned by you"
+        )
+    if len({tool.name for tool in tools}) != len(tools):
+        raise HTTPException(
+            status_code=400, detail="Bound tools must have distinct names"
+        )
+
+
+def _version_public(
+    *, session: SessionDep, version: AgentVersion
+) -> AgentVersionPublic:
+    names = session.exec(
+        select(Tool.name)
+        .join(AgentToolBinding, col(AgentToolBinding.tool_id) == Tool.id)
+        .where(AgentToolBinding.agent_version_id == version.id)
+        .order_by(Tool.name)
+    ).all()
+    return AgentVersionPublic.model_validate(
+        version, update={"tool_names": list(names)}
+    )
 
 
 def _get_owned_agent(
@@ -89,6 +122,9 @@ def create_agent(
     *, session: SessionDep, current_user: CurrentUser, agent_in: AgentCreate
 ) -> Any:
     """Create a new agent."""
+    _validate_tool_ids(
+        session=session, current_user=current_user, tool_ids=agent_in.tool_ids
+    )
     return crud.create_agent(
         session=session, agent_in=agent_in, owner_id=current_user.id
     )
@@ -104,6 +140,12 @@ def update_agent(
 ) -> Any:
     """Update an agent."""
     agent = _get_owned_agent(session=session, current_user=current_user, agent_id=id)
+    if "tool_ids" in agent_in.model_fields_set:
+        if agent_in.tool_ids is None:
+            raise HTTPException(status_code=422, detail="tool_ids cannot be null")
+        _validate_tool_ids(
+            session=session, current_user=current_user, tool_ids=agent_in.tool_ids
+        )
     return crud.update_agent(session=session, db_agent=agent, agent_in=agent_in)
 
 
@@ -134,9 +176,15 @@ def publish_version(
             detail="Agent must have an LLM model configured to publish",
         )
     try:
-        return crud.publish_agent_version(
+        _validate_tool_ids(
+            session=session,
+            current_user=current_user,
+            tool_ids=[uuid.UUID(str(value)) for value in agent.tool_ids],
+        )
+        version = crud.publish_agent_version(
             session=session, db_agent=agent, changelog=version_in.changelog
         )
+        return _version_public(session=session, version=version)
     except IntegrityError:
         session.rollback()
         raise HTTPException(
@@ -158,8 +206,19 @@ def read_versions(session: SessionDep, current_user: CurrentUser, id: uuid.UUID)
         .where(AgentVersion.agent_id == id)
         .order_by(col(AgentVersion.version_number).desc())
     ).all()
+    tool_names: dict[uuid.UUID, list[str]] = {}
+    for version_id, name in session.exec(
+        select(AgentToolBinding.agent_version_id, Tool.name)
+        .join(Tool, col(AgentToolBinding.tool_id) == Tool.id)
+        .where(col(AgentToolBinding.agent_version_id).in_([v.id for v in versions]))
+        .order_by(Tool.name)
+    ).all():
+        tool_names.setdefault(version_id, []).append(name)
     versions_public = [
-        AgentVersionPublic.model_validate(version) for version in versions
+        AgentVersionPublic.model_validate(
+            version, update={"tool_names": tool_names.get(version.id, [])}
+        )
+        for version in versions
     ]
     return AgentVersionsPublic(data=versions_public, count=count)
 
@@ -176,4 +235,4 @@ def read_version(
     version = crud.get_agent_version(session=session, version_id=version_id)
     if not version or version.agent_id != id:
         raise HTTPException(status_code=404, detail="Agent version not found")
-    return version
+    return _version_public(session=session, version=version)

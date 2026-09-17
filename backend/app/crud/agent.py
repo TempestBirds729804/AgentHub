@@ -3,7 +3,7 @@ import uuid
 from sqlmodel import Session, func, select
 
 from app.agent.snapshot import AgentSnapshot
-from app.models import Agent, AgentCreate, AgentUpdate, AgentVersion
+from app.models import Agent, AgentCreate, AgentToolBinding, AgentUpdate, AgentVersion
 from app.models.base import get_datetime_utc
 
 
@@ -11,6 +11,7 @@ def create_agent(
     *, session: Session, agent_in: AgentCreate, owner_id: uuid.UUID
 ) -> Agent:
     db_obj = Agent.model_validate(agent_in, update={"owner_id": owner_id})
+    db_obj.sqlmodel_update({"tool_ids": agent_in.model_dump(mode="json")["tool_ids"]})
     session.add(db_obj)
     session.commit()
     session.refresh(db_obj)
@@ -19,6 +20,8 @@ def create_agent(
 
 def update_agent(*, session: Session, db_agent: Agent, agent_in: AgentUpdate) -> Agent:
     agent_data = agent_in.model_dump(exclude_unset=True)
+    if agent_in.tool_ids is not None:
+        agent_data["tool_ids"] = agent_in.model_dump(mode="json")["tool_ids"]
     db_agent.sqlmodel_update(agent_data, update={"updated_at": get_datetime_utc()})
     session.add(db_agent)
     session.commit()
@@ -49,6 +52,7 @@ def publish_agent_version(
         llm_settings=db_agent.llm_settings,
         max_iterations=db_agent.max_iterations,
         timeout_seconds=db_agent.timeout_seconds,
+        tool_ids=db_agent.tool_ids,
     )
     # Concurrent publishes rely on the database unique constraint for detection.
     next_number = get_latest_version_number(session=session, agent_id=db_agent.id) + 1
@@ -59,6 +63,13 @@ def publish_agent_version(
         changelog=changelog,
     )
     session.add(db_version)
+    session.flush()
+    for tool_id in set(db_agent.tool_ids):
+        session.add(
+            AgentToolBinding(
+                agent_version_id=db_version.id, tool_id=uuid.UUID(str(tool_id))
+            )
+        )
     session.commit()
     session.refresh(db_version)
     return db_version

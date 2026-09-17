@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
+from redis import Redis
 from sqlmodel import Session, delete
 
 from app.agent.models import get_provider
@@ -14,9 +15,36 @@ from app.agent.models.openai_compat import OpenAICompatProvider
 from app.core.config import settings
 from app.core.db import engine, init_db
 from app.main import app
-from app.models import Agent, AgentVersion, ConvMessage, Conversation, Run, RunEvent, User
+from app.models import (
+    Agent,
+    AgentToolBinding,
+    AgentVersion,
+    Conversation,
+    ConvMessage,
+    Run,
+    RunEvent,
+    Tool,
+    User,
+)
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
+
+
+@pytest.fixture(autouse=True)
+def clean_redis() -> Generator[None]:
+    """Remove only Redis keys/jobs created by this test, never shared data."""
+    redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+    before = set(redis.scan_iter("agenthub:*")) | set(redis.scan_iter("arq:*"))
+    jobs_before = set(redis.zrange("arq:queue", 0, -1))
+    yield
+    new_jobs = set(redis.zrange("arq:queue", 0, -1)) - jobs_before
+    if new_jobs:
+        redis.zrem("arq:queue", *new_jobs)
+    after = set(redis.scan_iter("agenthub:*")) | set(redis.scan_iter("arq:*"))
+    created = after - before
+    if created:
+        redis.delete(*created)
+    redis.close()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -24,7 +52,17 @@ def db() -> Generator[Session]:
     with Session(engine) as session:
         init_db(session)
         yield session
-        for model in (RunEvent, Run, ConvMessage, Conversation, AgentVersion, Agent, User):
+        for model in (
+            RunEvent,
+            Run,
+            ConvMessage,
+            Conversation,
+            AgentToolBinding,
+            Tool,
+            AgentVersion,
+            Agent,
+            User,
+        ):
             session.execute(delete(model))
         session.commit()
 

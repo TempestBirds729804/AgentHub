@@ -20,6 +20,7 @@ import { Route as LayoutAgentsRouteImport } from './routes/_layout/agents'
 import { Route as LayoutPlaygroundRouteImport } from './routes/_layout/playground'
 import { Route as LayoutRunsRouteImport } from './routes/_layout/runs'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutToolsRouteImport } from './routes/_layout/tools'
 import { Route as LayoutAgentsAgentIdRouteImport } from './routes/_layout/agents.$agentId'
 import { Route as LayoutRunsRunIdRouteImport } from './routes/_layout/runs.$runId'
 
@@ -77,6 +78,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutToolsRoute = LayoutToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutAgentsAgentIdRoute = LayoutAgentsAgentIdRouteImport.update({
   id: '/$agentId',
   path: '/$agentId',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/playground': typeof LayoutPlaygroundRoute
   '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
+  '/tools': typeof LayoutToolsRoute
   '/agents/$agentId': typeof LayoutAgentsAgentIdRoute
   '/runs/$runId': typeof LayoutRunsRunIdRoute
 }
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/playground': typeof LayoutPlaygroundRoute
   '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
+  '/tools': typeof LayoutToolsRoute
   '/': typeof LayoutIndexRoute
   '/agents/$agentId': typeof LayoutAgentsAgentIdRoute
   '/runs/$runId': typeof LayoutRunsRunIdRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/_layout/playground': typeof LayoutPlaygroundRoute
   '/_layout/runs': typeof LayoutRunsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/tools': typeof LayoutToolsRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/agents/$agentId': typeof LayoutAgentsAgentIdRoute
   '/_layout/runs/$runId': typeof LayoutRunsRunIdRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/runs'
     | '/settings'
+    | '/tools'
     | '/agents/$agentId'
     | '/runs/$runId'
   fileRoutesByTo: FileRoutesByTo
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/runs'
     | '/settings'
+    | '/tools'
     | '/'
     | '/agents/$agentId'
     | '/runs/$runId'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/_layout/playground'
     | '/_layout/runs'
     | '/_layout/settings'
+    | '/_layout/tools'
     | '/_layout/'
     | '/_layout/agents/$agentId'
     | '/_layout/runs/$runId'
@@ -265,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/tools': {
+      id: '/_layout/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof LayoutToolsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/agents/$agentId': {
       id: '/_layout/agents/$agentId'
       path: '/$agentId'
@@ -312,6 +331,7 @@ interface LayoutRouteChildren {
   LayoutPlaygroundRoute: typeof LayoutPlaygroundRoute
   LayoutRunsRoute: typeof LayoutRunsRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutToolsRoute: typeof LayoutToolsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
@@ -321,6 +341,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutPlaygroundRoute: LayoutPlaygroundRoute,
   LayoutRunsRoute: LayoutRunsRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutToolsRoute: LayoutToolsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 

@@ -44,6 +44,20 @@ from app.models.run import (
     RunStatus,
     RunTrigger,
 )
+from app.models.tool import (
+    AgentToolBinding,
+    BuiltinFunctionPublic,
+    BuiltinFunctionsPublic,
+    Tool,
+    ToolBase,
+    ToolCreate,
+    ToolPublic,
+    ToolsPublic,
+    ToolTestRequest,
+    ToolTestResult,
+    ToolType,
+    ToolUpdate,
+)
 from app.models.user import (
     UpdatePassword,
     User,
@@ -57,6 +71,18 @@ from app.models.user import (
 )
 
 __all__ = [
+    "AgentToolBinding",
+    "Tool",
+    "ToolBase",
+    "ToolCreate",
+    "ToolUpdate",
+    "ToolPublic",
+    "ToolsPublic",
+    "ToolType",
+    "BuiltinFunctionPublic",
+    "BuiltinFunctionsPublic",
+    "ToolTestRequest",
+    "ToolTestResult",
     "Conversation",
     "ConversationBase",
     "ConversationCreate",
@@ -112,3 +138,5 @@ Run.model_rebuild()
 RunEvent.model_rebuild()
 Conversation.model_rebuild()
 ConvMessage.model_rebuild()
+Tool.model_rebuild()
+AgentToolBinding.model_rebuild()

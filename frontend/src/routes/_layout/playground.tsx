@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Loader2, MessageSquare, Plus, Send, Square } from "lucide-react"
-import { Suspense, useEffect, useRef, useState } from "react"
+import { Fragment, Suspense, useEffect, useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -16,6 +16,7 @@ import {
   ConversationsService,
   type ConvMessagePublic,
 } from "@/client"
+import ToolTrace from "@/components/Tools/ToolTrace"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -245,6 +246,7 @@ function Chat({
   const [node, setNode] = useState<string | null>(null)
   const [events, setEvents] = useState<SSEEvent[]>([])
   const [runId, setRunId] = useState<string | null>(null)
+  const [truncated, setTruncated] = useState(false)
   const [usage, setUsage] = useState<{
     prompt_tokens: number
     completion_tokens: number
@@ -284,13 +286,13 @@ function Chat({
     setEvents([])
     setUsage(null)
     setRunId(null)
+    setTruncated(false)
     form.reset()
     let terminal = false
     try {
       for await (const evt of streamSSE(
         `${import.meta.env.VITE_API_URL ?? ""}/api/v1/conversations/${id}/stream`,
-        values,
-        controller.signal,
+        { body: values, signal: controller.signal },
       )) {
         // Keep the trace compact; text chunks already appear in the reply bubble.
         if (evt.event !== "model_chunk")
@@ -303,6 +305,7 @@ function Chat({
           prompt_tokens: number
           completion_tokens: number
           cost_usd: string | null
+          truncated_by_max_iterations: boolean
         }
         if (evt.event === "run_started") setRunId(data.run_id)
         if (evt.event === "model_chunk")
@@ -312,6 +315,7 @@ function Chat({
         if (evt.event === "run_finished") {
           terminal = true
           setUsage(data)
+          setTruncated(data.truncated_by_max_iterations)
         }
         if (evt.event === "run_failed") {
           terminal = true
@@ -353,26 +357,37 @@ function Chat({
           <p role="alert">Unable to load this conversation.</p>
         )}
         {history.data?.map((message) => (
-          <Bubble
-            key={message.id}
-            messageRole={message.role}
-            content={message.content}
-          />
+          <Fragment key={message.id}>
+            {!streaming &&
+              message.role === "assistant" &&
+              message.run_id === runId && <ToolTrace events={events} />}
+            <Bubble messageRole={message.role} content={message.content} />
+          </Fragment>
         ))}
         {optimisticUser && (
           <Bubble messageRole="user" content={optimisticUser} />
         )}
         {streaming && (
           <div className="max-w-[90%] self-start">
+            <ToolTrace events={events} running />
             <div
               className="mb-2 flex items-center gap-2 text-xs text-muted-foreground"
               data-testid="current-node"
             >
               <Loader2 className="size-3 animate-spin" />
-              {node || "Processing"}
+              {node === "tools" ? "executing tools" : node || "Processing"}
             </div>
             <Bubble messageRole="assistant" content={text || "…"} />
           </div>
+        )}
+        {truncated && (
+          <p
+            role="status"
+            className="text-sm text-amber-700 dark:text-amber-400"
+          >
+            Stopped at the maximum iteration limit. Some tool calls were not
+            executed.
+          </p>
         )}
       </div>
       <div className="mt-auto border-t p-4">

@@ -2,6 +2,8 @@
 
 ## 前置依赖
 
+后续必经阶段为 [05_1 — 独立 MCP 服务与真实调用验收](05_1-mcp-service.md)。本文件保留阶段 05 的 SSE 实现及验收历史；Streamable HTTP 和真实独立服务由 05_1 实现，完成后才进入 06。
+
 阶段 [04-conversation-streaming.md](04-conversation-streaming.md) 的验收清单全部通过。特别确认：
 
 - Playground 里流式对话可用，回复逐字出现
@@ -1040,24 +1042,24 @@ Run 详情页的执行轨迹也要能展示这两种事件，样式与 Playgroun
 
 ## 阶段验收清单
 
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`
-- [ ] `agent.tool_ids` 列有 `server_default '[]'`，已有行没有变成 null
-- [ ] `uv run pytest tests/ -v` 全绿
-- [ ] SSRF 防护的参数化测试全部通过（8 个 URL 全被拦）
-- [ ] calculator 的四条安全测试全部通过，且 `2 ** 10000000` 那条在 1 秒内结束
-- [ ] `max_iterations` 循环守卫测试通过（假模型无限返回 tool_calls 时图能停下）
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] `bun run lint` 通过
-- [ ] 手动验证 Function Tool：建一个 calculator 工具，绑到 agent，发布，在 Playground 问"123 乘 456 等于多少"，模型调用工具并给出 56088
-- [ ] 手动验证 HTTP Tool：建一个指向某个公开 API 的工具（例如 `https://api.github.com/repos/{owner}/{repo}`），试跑成功，绑到 agent 后模型能用它
-- [ ] 手动验证 SSRF 拦截：建一个 url 为 `http://169.254.169.254/` 的 HTTP 工具，创建时返回 400
-- [ ] 手动验证工具失败：把 HTTP 工具的 url 改成不存在的域名，在 Playground 提问，模型收到失败信息并给出合理回应（而不是整个 Run 崩掉）
-- [ ] 手动验证 Playground 的工具块显示正确（工具名、参数、结果、耗时）
-- [ ] Run 详情页能看到 `tool_called` 和 `tool_result` 事件
-- [ ] `SELECT count(*) FROM run_event WHERE event_type IN ('tool_called','tool_result');` 大于 0
-- [ ] 绑定到已发布版本的工具，删除时返回 409
-- [ ] MCP Tool 至少能创建并通过 `validate_config`（实际连通性测试可选，取决于有无可用的 MCP server）
+- [x] `uv run alembic check` 输出 `No new upgrade operations detected.`
+- [x] `agent.tool_ids` 列有 `server_default '[]'`，已有行没有变成 null
+- [x] `uv run pytest tests/ -v` 全绿（141 项）
+- [x] SSRF 防护的参数化测试全部通过（8 个 URL 全被拦）
+- [x] calculator 的四条安全测试全部通过，且 `2 ** 10000000` 那条在 1 秒内结束
+- [x] `max_iterations` 循环守卫测试通过（假模型无限返回 tool_calls 时图能停下）
+- [x] `cd backend && bash scripts/lint.sh` 的等价命令全绿（Windows 环境，见下方记录）
+- [x] `cd backend && bash scripts/test.sh` 的等价命令全绿（含 coverage）
+- [x] `bun run lint` 通过
+- [x] 浏览器验证 Function Tool：建 calculator 工具，绑到 agent，发布，在 Playground 问“123 乘 456 等于多少”，真实模型调用工具并给出 56088
+- [x] 浏览器验证 HTTP Tool：GitHub 公开 API 试跑成功，绑定后真实模型能查询 `fastapi/fastapi`
+- [x] 浏览器验证 SSRF 拦截：url 为 `http://169.254.169.254/` 的 HTTP 工具创建时返回 400
+- [x] 浏览器验证工具失败：GitHub 不存在仓库返回 404，模型收到失败信息并合理回应，Run 正常完成（替代不存在域名，原因见偏差记录）
+- [x] Playground 工具块显示正确（工具名、参数、结果、耗时），已检查截图
+- [x] Run 详情页能看到 `tool_called` 和 `tool_result` 事件
+- [x] `SELECT count(*) FROM run_event WHERE event_type IN ('tool_called','tool_result');` 返回 12
+- [x] 绑定到已发布版本的工具，删除时返回 409
+- [x] MCP Tool 能创建并通过 `validate_config`；连接复用、回收、超时和失败已通过模拟测试，未连接真实 MCP server
 
 ---
 
@@ -1097,7 +1099,18 @@ LangChain 版本差异。用 `pydantic.create_model` 从 JSON Schema 动态建�
 
 ## 偏差记录
 
-- MCP 实现方式（langchain-mcp-adapters / 官方 SDK）：
-- MCP 支持的传输类型：
-- `StructuredTool` 的 args_schema 实际写法：
-- 其它偏差：
+- 配套范围：为实现双向级联关系、模块级 CRUD、参数校验和前端验收，需修改 `models/user.py`，新增 `crud/tool.py`、`tests/utils/tool.py`、前端 Tools/Pending 组件及工具交互测试；依赖变动同步 `backend/pyproject.toml` 和 `uv.lock`。保留已有 `.env` 修改，安全开关使用默认关闭值。
+- 前序依据：01/02 清单未勾选，但 03 偏差记录已记录前序回归通过，04 完整验收已通过；2026-09-17 当前基线 `alembic check` 无差异。
+
+- MCP 实现方式：`langchain-mcp-adapters==0.3.2`，通过 `MultiServerMCPClient.session` 复用会话；每个连接由独立 asyncio 任务持有上下文，避免 AnyIO cancel scope 跨任务退出，空闲 60 秒回收。超时取消连接任务，失败返回工具错误。
+- MCP 支持的传输类型：本阶段只支持 SSE；拒绝 stdio 配置。HTTP 与 MCP 请求执行前验证目标地址，默认禁止私网，部署配置未开启安全豁免。
+- `StructuredTool` 的 args_schema 实际写法：当前版本直接接受 JSON Schema 字典，执行前使用 `Draft202012Validator` 校验参数，并禁用远程 schema 引用解析。使用 `content_and_artifact` 保留成功状态、错误和耗时；SSE 通过 LangChain 运行 ID 对应固定 index，避免同名并行调用的结果错配。
+- 类型及持久化：工具类型使用字符串枚举并显式指定 varchar；工具名用 Pydantic `StringConstraints` 校验。`tool_ids` 用 JSON 模式序列化 UUID，发布版本时在同一事务内创建绑定；发布和删除锁定工具行，避免并发删除绕过绑定约束。
+- 内置函数：任务文字写“三个”，但具体只列出 `calculator` 和 `current_time`，本阶段实现这两个，不额外扩展。
+- 对话延续：沿用阶段 04 的最终回复持久化方式，中间工具过程保存到 RunEvent；达到迭代上限时标记 `truncated`，不把缺少对应结果的 tool_calls 留入下一轮历史。
+- 失败场景调整：无法解析的域名在创建/更新配置时即被 DNS 安全校验拒绝，无法按原清单保存后再触发。因此真实失败链路使用 GitHub 不存在仓库的 HTTP 404 验证，Run 成功完成并给出错误解释。
+- 本机 HTTP 验证：代理 DNS 将 `api.github.com` 解析到非公网 `198.18.0.155`，默认防护正确拦截。真实 HTTP 验收期间仅对本机回环 API 进程临时设置 `ALLOW_PRIVATE_TOOL_URLS=true`，验收后已恢复 false；默认配置和 `.env` 未因本阶段修改。恢复后 SSRF 浏览器回归通过。
+- Windows 验证：无可用 bash，实际执行脚本等价的 mypy、ty、ruff check/format 检查和 `coverage run -m pytest tests/`、`coverage report`、`coverage html`。2026-09-17 最终后端 141 项通过，覆盖率 90%；前端 `bun run lint`、TypeScript/Vite 构建通过。Playwright 相关回归 9 项通过（含登录准备），真实模型工具链路另一次运行 2 项通过（含登录准备）。
+- 数据库验证：开发库迁移至 `6b47e6b4b2fe`，独立测试库验证 downgrade/upgrade 和 `alembic check`；开发库 `agent.tool_ids` 为 NOT NULL JSONB，默认 `'[]'::jsonb`，空值数 0。
+- 真实运行记录：计算 `1cac57a1-54e8-4a9b-9531-1d78ff9c3d8b`（56088）、GitHub 查询 `2167bb94-a4aa-45bc-a5f9-01266b40f935`、404 恢复 `38c613e4-145c-4a5d-b33f-87b3d12cc291` 均 succeeded；已检查 Playground 和 Run 详情截图。
+- 生成物：OpenAPI 客户端及路由树已重新生成。生成器输出的 `sdk.gen.ts` 有空白行尾空格，保留生成结果，未手工编辑客户端；项目 lint 和构建通过。

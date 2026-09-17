@@ -56,6 +56,29 @@ services:
     volumes:
       - app-minio-data:/data
 
+  mcp-docs:
+    image: backend:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["python", "-m", "app.mcp_server.server"]
+    user: "65532:65532"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      MCP_DOCS_ROOT: /app/mcp-docs
+      MCP_DOCS_HOST: 0.0.0.0
+      MCP_DOCS_PORT: "3001"
+      PYTHONDONTWRITEBYTECODE: "1"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3001/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   adminer:
     image: adminer
     depends_on:
@@ -81,7 +104,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    environment:
+    environment: &backend-env
       PROJECT_NAME: ${PROJECT_NAME:?Variable not set}
       SECRET_KEY: ${SECRET_KEY:?Variable not set}
       FIRST_SUPERUSER: ${FIRST_SUPERUSER:?Variable not set}
@@ -98,6 +121,8 @@ services:
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
       EMBEDDING_DIM: ${EMBEDDING_DIM:-}
       REDIS_URL: redis://redis:6379/0
+      AGENT_MAX_CONCURRENT_RUNS_PER_USER: ${AGENT_MAX_CONCURRENT_RUNS_PER_USER:-3}
+      MCP_TRUSTED_SERVER_URLS: '["http://mcp-docs:3001/mcp"]'
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Variable not set}
       S3_SECRET_KEY: ${S3_SECRET_KEY:?Variable not set}
@@ -122,6 +147,25 @@ services:
       # Route HTTP traffic for this domain
       - traefik.http.routers.backend-http.rule=Host(`${DOMAIN:-localhost}`)
       - traefik.http.routers.backend-http.entrypoints=http
+
+  worker:
+    image: backend:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+    environment: *backend-env
+    command: ["arq", "app.worker.main.WorkerSettings"]
+    healthcheck:
+      test: ["CMD", "arq", "app.worker.main.WorkerSettings", "--check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   app-db-data:

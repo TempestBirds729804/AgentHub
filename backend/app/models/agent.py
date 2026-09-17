@@ -11,10 +11,14 @@ from app.models.base import get_datetime_utc
 if TYPE_CHECKING:
     from app.models.conversation import Conversation
     from app.models.run import Run
+    from app.models.tool import AgentToolBinding
     from app.models.user import User
 
 
 class AgentBase(SQLModel):
+    tool_ids: list[uuid.UUID] = Field(
+        default_factory=list, sa_type=JSONB, sa_column_kwargs={"server_default": "[]"}
+    )
     name: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
     system_prompt: str = Field(default="", max_length=20000)
@@ -30,6 +34,7 @@ class AgentCreate(AgentBase):
 
 
 class AgentUpdate(SQLModel):
+    tool_ids: list[uuid.UUID] | None = None
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)
     system_prompt: str | None = Field(default=None, max_length=20000)
@@ -87,6 +92,9 @@ class AgentVersionCreate(AgentVersionBase):
 class AgentVersion(AgentVersionBase, table=True):
     __tablename__ = "agent_version"
     __table_args__ = (UniqueConstraint("agent_id", "version_number"),)
+    tool_bindings: list["AgentToolBinding"] = Relationship(  # noqa: UP037
+        back_populates="agent_version", cascade_delete=True
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     agent_id: uuid.UUID = Field(
@@ -107,6 +115,7 @@ class AgentVersion(AgentVersionBase, table=True):
 
 
 class AgentVersionPublic(AgentVersionBase):
+    tool_names: list[str] = Field(default_factory=list)
     id: uuid.UUID
     agent_id: uuid.UUID
     version_number: int

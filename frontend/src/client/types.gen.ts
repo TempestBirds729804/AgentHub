@@ -9,6 +9,10 @@ export type ClientOptions = {
  */
 export type AgentCreate = {
     /**
+     * Tool Ids
+     */
+    tool_ids?: Array<string>;
+    /**
      * Name
      */
     name: string;
@@ -48,6 +52,10 @@ export type AgentCreate = {
  * AgentPublic
  */
 export type AgentPublic = {
+    /**
+     * Tool Ids
+     */
+    tool_ids?: Array<string>;
     /**
      * Name
      */
@@ -109,6 +117,10 @@ export type AgentPublic = {
  */
 export type AgentUpdate = {
     /**
+     * Tool Ids
+     */
+    tool_ids?: Array<string> | null;
+    /**
      * Name
      */
     name?: string | null;
@@ -164,6 +176,10 @@ export type AgentVersionPublic = {
      * Changelog
      */
     changelog?: string | null;
+    /**
+     * Tool Names
+     */
+    tool_names?: Array<string>;
     /**
      * Id
      */
@@ -248,6 +264,40 @@ export type Body_login_login_access_token = {
      * Client Secret
      */
     client_secret?: string | null;
+};
+
+/**
+ * BuiltinFunctionPublic
+ */
+export type BuiltinFunctionPublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Parameters Schema
+     */
+    parameters_schema: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * BuiltinFunctionsPublic
+ */
+export type BuiltinFunctionsPublic = {
+    /**
+     * Data
+     */
+    data: Array<BuiltinFunctionPublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -597,6 +647,18 @@ export type RunPublic = {
      * Agent Version Number
      */
     agent_version_number?: number | null;
+    /**
+     * Thread Id
+     */
+    thread_id?: string | null;
+    /**
+     * Checkpoint Id
+     */
+    checkpoint_id?: string | null;
+    /**
+     * Retry Count
+     */
+    retry_count?: number;
 };
 
 /**
@@ -645,6 +707,191 @@ export type Token = {
      * Token Type
      */
     token_type?: string;
+};
+
+/**
+ * ToolCreate
+ */
+export type ToolCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    tool_type: ToolType;
+    /**
+     * Parameters Schema
+     */
+    parameters_schema?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Config
+     */
+    config?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Requires Approval
+     */
+    requires_approval?: boolean;
+    /**
+     * Timeout Seconds
+     */
+    timeout_seconds?: number;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+};
+
+/**
+ * ToolPublic
+ */
+export type ToolPublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    tool_type: ToolType;
+    /**
+     * Parameters Schema
+     */
+    parameters_schema?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Config
+     */
+    config?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Requires Approval
+     */
+    requires_approval?: boolean;
+    /**
+     * Timeout Seconds
+     */
+    timeout_seconds?: number;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Updated At
+     */
+    updated_at?: string | null;
+};
+
+/**
+ * ToolTestRequest
+ */
+export type ToolTestRequest = {
+    /**
+     * Arguments
+     */
+    arguments?: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * ToolTestResult
+ */
+export type ToolTestResult = {
+    /**
+     * Ok
+     */
+    ok: boolean;
+    /**
+     * Content
+     */
+    content: string;
+    /**
+     * Error
+     */
+    error?: string | null;
+    /**
+     * Duration Ms
+     */
+    duration_ms: number;
+};
+
+/**
+ * ToolType
+ */
+export type ToolType = 'function' | 'http' | 'mcp';
+
+/**
+ * ToolUpdate
+ */
+export type ToolUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Parameters Schema
+     */
+    parameters_schema?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Config
+     */
+    config?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Requires Approval
+     */
+    requires_approval?: boolean | null;
+    /**
+     * Timeout Seconds
+     */
+    timeout_seconds?: number | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+};
+
+/**
+ * ToolsPublic
+ */
+export type ToolsPublic = {
+    /**
+     * Data
+     */
+    data: Array<ToolPublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -816,6 +1063,209 @@ export type ValidationError = {
         [key: string]: unknown;
     };
 };
+
+export type toolsReadBuiltinFunctionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tools/builtin-functions';
+};
+
+export type toolsReadBuiltinFunctionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: BuiltinFunctionsPublic;
+};
+
+export type toolsReadBuiltinFunctionsResponse = toolsReadBuiltinFunctionsResponses[keyof toolsReadBuiltinFunctionsResponses];
+
+export type toolsReadToolsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Tool Type
+         */
+        tool_type?: ToolType | null;
+        /**
+         * Is Active
+         */
+        is_active?: boolean | null;
+    };
+    url: '/api/v1/tools/';
+};
+
+export type toolsReadToolsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type toolsReadToolsError = toolsReadToolsErrors[keyof toolsReadToolsErrors];
+
+export type toolsReadToolsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ToolsPublic;
+};
+
+export type toolsReadToolsResponse = toolsReadToolsResponses[keyof toolsReadToolsResponses];
+
+export type toolsCreateToolData = {
+    body: ToolCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tools/';
+};
+
+export type toolsCreateToolErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type toolsCreateToolError = toolsCreateToolErrors[keyof toolsCreateToolErrors];
+
+export type toolsCreateToolResponses = {
+    /**
+     * Successful Response
+     */
+    200: ToolPublic;
+};
+
+export type toolsCreateToolResponse = toolsCreateToolResponses[keyof toolsCreateToolResponses];
+
+export type toolsDeleteToolData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/tools/{id}';
+};
+
+export type toolsDeleteToolErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type toolsDeleteToolError = toolsDeleteToolErrors[keyof toolsDeleteToolErrors];
+
+export type toolsDeleteToolResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type toolsDeleteToolResponse = toolsDeleteToolResponses[keyof toolsDeleteToolResponses];
+
+export type toolsReadToolData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/tools/{id}';
+};
+
+export type toolsReadToolErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type toolsReadToolError = toolsReadToolErrors[keyof toolsReadToolErrors];
+
+export type toolsReadToolResponses = {
+    /**
+     * Successful Response
+     */
+    200: ToolPublic;
+};
+
+export type toolsReadToolResponse = toolsReadToolResponses[keyof toolsReadToolResponses];
+
+export type toolsUpdateToolData = {
+    body: ToolUpdate;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/tools/{id}';
+};
+
+export type toolsUpdateToolErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type toolsUpdateToolError = toolsUpdateToolErrors[keyof toolsUpdateToolErrors];
+
+export type toolsUpdateToolResponses = {
+    /**
+     * Successful Response
+     */
+    200: ToolPublic;
+};
+
+export type toolsUpdateToolResponse = toolsUpdateToolResponses[keyof toolsUpdateToolResponses];
+
+export type toolsTestToolData = {
+    body: ToolTestRequest;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/tools/{id}/test';
+};
+
+export type toolsTestToolErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type toolsTestToolError = toolsTestToolErrors[keyof toolsTestToolErrors];
+
+export type toolsTestToolResponses = {
+    /**
+     * Successful Response
+     */
+    200: ToolTestResult;
+};
+
+export type toolsTestToolResponse = toolsTestToolResponses[keyof toolsTestToolResponses];
 
 export type loginLoginAccessTokenData = {
     body: Body_login_login_access_token;
@@ -1489,6 +1939,124 @@ export type agentsReadVersionResponses = {
 };
 
 export type agentsReadVersionResponse = agentsReadVersionResponses[keyof agentsReadVersionResponses];
+
+export type runsCreateAsyncRunData = {
+    body: RunCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/runs/async';
+};
+
+export type runsCreateAsyncRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type runsCreateAsyncRunError = runsCreateAsyncRunErrors[keyof runsCreateAsyncRunErrors];
+
+export type runsCreateAsyncRunResponses = {
+    /**
+     * Successful Response
+     */
+    202: RunPublic;
+};
+
+export type runsCreateAsyncRunResponse = runsCreateAsyncRunResponses[keyof runsCreateAsyncRunResponses];
+
+export type runsCancelRunData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/runs/{id}/cancel';
+};
+
+export type runsCancelRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type runsCancelRunError = runsCancelRunErrors[keyof runsCancelRunErrors];
+
+export type runsCancelRunResponses = {
+    /**
+     * Successful Response
+     */
+    200: RunPublic;
+};
+
+export type runsCancelRunResponse = runsCancelRunResponses[keyof runsCancelRunResponses];
+
+export type runsRetryRunData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: {
+        /**
+         * Fresh
+         */
+        fresh?: boolean;
+    };
+    url: '/api/v1/runs/{id}/retry';
+};
+
+export type runsRetryRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type runsRetryRunError = runsRetryRunErrors[keyof runsRetryRunErrors];
+
+export type runsRetryRunResponses = {
+    /**
+     * Successful Response
+     */
+    202: RunPublic;
+};
+
+export type runsRetryRunResponse = runsRetryRunResponses[keyof runsRetryRunResponses];
+
+export type runsStreamRunEventsData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/runs/{id}/stream';
+};
+
+export type runsStreamRunEventsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type runsStreamRunEventsError = runsStreamRunEventsErrors[keyof runsStreamRunEventsErrors];
+
+export type runsStreamRunEventsResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type runsReadRunsData = {
     body?: never;

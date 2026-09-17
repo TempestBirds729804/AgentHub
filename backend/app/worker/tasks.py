@@ -1,0 +1,141 @@
+import asyncio
+import logging
+import uuid
+from datetime import timedelta
+from typing import Any
+
+from sqlalchemy import text
+from sqlmodel import col, select
+
+from app.core.async_db import async_engine, async_session_maker
+from app.core.redis import get_redis
+from app.models import Run, RunEventType, RunStatus, get_datetime_utc
+from app.services.event_bus import TERMINAL_STATUSES, RedisEventPublisher
+from app.services.rate_limit import release_run_slot, try_acquire_run_slot
+from app.services.run_service import RunEventRecorder, execute_run_with_checkpoint
+from app.worker.settings import STALE_RUN_THRESHOLD_SECONDS
+
+logger = logging.getLogger(__name__)
+
+
+def run_lock_key(run_id: uuid.UUID) -> int:
+    """A transaction advisory lock prevents concurrent executions of one Run."""
+    return int.from_bytes(run_id.bytes[:8], "big", signed=True)
+
+
+def run_job_id(run: Run) -> str:
+    return f"agenthub:run:{run.id}:attempt:{run.retry_count}"
+
+
+async def execute_run_task(ctx: dict[str, Any], run_id: str) -> dict[str, Any]:
+    """Reload a Run and its tools; only the ID crosses the queue boundary."""
+    run_uuid = uuid.UUID(run_id)
+    # Dedicated transaction: commits in the execution Session cannot release this
+    # lock. PostgreSQL releases it if the worker process/connection dies.
+    async with async_engine.begin() as connection:
+        locked = await connection.scalar(
+            text("SELECT pg_try_advisory_xact_lock(:key)"),
+            {"key": run_lock_key(run_uuid)},
+        )
+        if not locked:
+            return {"status": "already_running"}
+        async with async_session_maker() as session:
+            run = await session.get(Run, run_uuid)
+            if run is None:
+                return {"status": "not_found"}
+            if ctx.get("job_id", run_job_id(run)) != run_job_id(run):
+                return {"status": "obsolete"}
+            if run.status not in (RunStatus.QUEUED, RunStatus.RUNNING):
+                return {"status": str(run.status)}
+            owner_id = run.owner_id
+            redis = get_redis()
+            publisher = RedisEventPublisher(redis=redis, run_id=run_uuid)
+            try:
+                if not await try_acquire_run_slot(
+                    redis=redis, user_id=owner_id, run_id=run_uuid
+                ):
+                    raise RuntimeError("Concurrent run limit reached during recovery")
+                await execute_run_with_checkpoint(
+                    session=session, run=run, publisher=publisher
+                )
+            except asyncio.CancelledError:
+                # arq redelivers on shutdown; keep RUNNING with checkpoint intact.
+                # Reaper handles a second interruption or a hard process kill.
+                raise
+            except Exception as exc:
+                await session.rollback()
+                await session.refresh(run)
+                if run.status not in TERMINAL_STATUSES:
+                    recorder = RunEventRecorder(session=session, run_id=run_uuid)
+                    await recorder.resync_seq()
+                    run.sqlmodel_update(
+                        {
+                            "status": RunStatus.FAILED,
+                            "error": (str(exc) or type(exc).__name__)[:4000],
+                            "finished_at": get_datetime_utc(),
+                        }
+                    )
+                    session.add(run)
+                    await recorder.record(
+                        RunEventType.RUN_FAILED, payload={"error": run.error}
+                    )
+                    await session.commit()
+                    await session.refresh(run)
+                logger.exception("Run %s failed", run_uuid)
+            finally:
+                try:
+                    await publisher.close()
+                except Exception:
+                    logger.warning(
+                        "Failed to close Run %s stream; TTL will expire", run_uuid
+                    )
+                try:
+                    await release_run_slot(
+                        redis=redis, user_id=owner_id, run_id=run_uuid
+                    )
+                except Exception:
+                    logger.warning(
+                        "Failed to release Run %s slot; TTL will expire", run_uuid
+                    )
+            return {"status": run.status}
+
+
+async def reap_stale_runs(_ctx: dict[str, Any]) -> int:
+    """Fail interrupted runs after the worker timeout plus a five-minute buffer."""
+    cutoff = get_datetime_utc() - timedelta(seconds=STALE_RUN_THRESHOLD_SECONDS)
+    async with async_session_maker() as session:
+        runs = list(
+            (
+                await session.execute(
+                    select(Run)
+                    .where(
+                        Run.status == RunStatus.RUNNING, col(Run.started_at) < cutoff
+                    )
+                    .with_for_update(skip_locked=True)
+                )
+            ).scalars()
+        )
+        for run in runs:
+            recorder = RunEventRecorder(session=session, run_id=run.id)
+            await recorder.resync_seq()
+            run.sqlmodel_update(
+                {
+                    "status": RunStatus.FAILED,
+                    "error": "Run was interrupted and did not resume in time",
+                    "finished_at": get_datetime_utc(),
+                }
+            )
+            session.add(run)
+            await recorder.record(RunEventType.RUN_FAILED, payload={"error": run.error})
+        await session.commit()
+        for run in runs:
+            await session.refresh(run)
+            await release_run_slot(
+                redis=get_redis(), user_id=run.owner_id, run_id=run.id
+            )
+            publisher = RedisEventPublisher(redis=get_redis(), run_id=run.id)
+            await publisher.publish(
+                RunEventType.RUN_FAILED, {"run_id": str(run.id), "error": run.error}
+            )
+            await publisher.close()
+    return len(runs)

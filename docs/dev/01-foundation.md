@@ -741,25 +741,25 @@ docker compose up -d db redis minio mailpit
 
 ## 阶段验收清单
 
-逐条实际执行，全部通过才能进入阶段 02。
+2026-09-17 按当前阶段 05 代码补验闭环。原来仅适用于阶段 01 的 Item 和相对迁移命令，按下列等价验证处理；不声称重新运行了历史代码。提交代码仍需用户另行授权，不作为运行验收的一部分。
 
-- [ ] `cd backend && uv sync` 无错误，`uv.lock` 已更新并提交
-- [ ] `uv run python -c "from langgraph.graph import StateGraph; from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver; from langchain_openai import ChatOpenAI; from pgvector.sqlalchemy import Vector; print('ok')"` 打印 ok
-- [ ] 若回退到 3.13，六处修改全部完成，且已在下方"偏差记录"写明
-- [ ] `rg -i "full.stack.fastapi|fastapi.template"` 在业务代码里无命中
-- [ ] `uv run python -c "from app.models import SQLModel, User, Item; print(sorted(SQLModel.metadata.tables))"` 输出 `['item', 'user']`
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`（证明 models 拆包没改变 metadata）
-- [ ] `uv run python -c "from app import crud; print(crud.authenticate)"` 正常
-- [ ] `docker compose up -d db redis minio mailpit && docker compose ps` 四个服务全 healthy
-- [ ] `docker compose exec redis redis-cli ping` 返回 PONG
-- [ ] MinIO 控制台 <http://localhost:9001> 能用 `.env` 里的账号登录
-- [ ] `uv run alembic upgrade head` 成功，`pg_extension` 里能查到 `vector`
-- [ ] `uv run alembic downgrade -1 && uv run alembic upgrade head` 往返无错
-- [ ] `uv run pytest tests/core/test_async_db.py -x` 通过
-- [ ] `cd backend && bash scripts/lint.sh` 全绿（mypy strict + ty + ruff）
-- [ ] `cd backend && bash scripts/test.sh` 全绿，覆盖率报告生成
-- [ ] `bun run lint` 通过
-- [ ] `uv run fastapi dev` 能起来，<http://localhost:8000/docs> 正常，能用 `.env` 里的超管账号登录前端
+- [x] `cd backend && uv sync --locked` 无错误，锁文件与依赖一致；本次不提交代码
+- [x] StateGraph、AsyncPostgresSaver、ChatOpenAI、Vector 实际 import 成功
+- [x] 无需回退：实际 Python 3.14.5，原 3.13 回退检查不适用
+- [x] `rg -i "full.stack.fastapi|fastapi.template" backend/app frontend/src` 在业务源码无命中
+- [x] models 包导入和 metadata 正常：当前包含 User、Agent 等九张业务表；Item 已按阶段 02 移除，不再要求导入 Item
+- [x] app 库和专用测试库 `uv run alembic check` 均输出 `No new upgrade operations detected.`
+- [x] `from app import crud` 后 `callable(crud.authenticate)` 为 true
+- [x] `docker compose ps` 中 db、redis、minio、mailpit 均 healthy（复用已运行服务）
+- [x] `docker compose exec -T redis redis-cli ping` 返回 PONG
+- [x] MinIO 控制台使用 `.env` 的 S3 账号登录，HTTP 204 后进入 `/browser`，截图已检查
+- [x] app 库 `uv run alembic upgrade head` 成功，`vector` 扩展版本为 0.8.6
+- [x] 专用库阶段 01 迁移 `88cdef47b355 → fe56fa70289e → 88cdef47b355` 往返成功
+- [x] `tests/core/test_async_db.py` 在本次全量后端测试中通过
+- [x] lint 脚本的等价命令 mypy、ty、ruff check、ruff format --check 全通过
+- [x] test 脚本的等价 coverage/pytest 命令全通过：141 项、覆盖率 90%，生成 HTML 报告
+- [x] `bun run lint` 和前端生产构建通过
+- [x] Windows 已验证的 Uvicorn Selector 启动方式下 `/docs` 返回 200，Playwright 超管登录通过；不将其冒充为原 `fastapi dev` 命令的重跑
 
 ---
 
@@ -792,8 +792,21 @@ docker compose up -d db redis minio mailpit
 
 ## 偏差记录
 
+- 2026-09-17 闭环范围：用户授权修复现有数据库排序规则并补齐 01/02 验收。先备份再重建索引并刷新 collation 版本；历史迁移回退仅在新建专用测试库执行，不回退 app 库。Windows worker 使用隔离安装的 arq 做兼容性探针，配套 `backend/scripts/check_windows_worker.py` 和 06 的启动约定属于本次明确范围，不提前实现生产 worker。为补齐阶段 02 的 v1/v2 不可变性浏览器证据，扩展现有 `frontend/tests/agents.spec.ts`。
+
 在这里记录实际执行时与本文档不一致的决定及原因，供后续阶段参考。
 
 - Python 版本：3.14（实际验证为 3.14.5，无需回退）
 - LangGraph / LangChain 实际版本：langgraph 1.2.11、langchain-core 1.6.2、langchain-openai 1.6.2、langgraph-checkpoint-postgres 3.1.2
 - 其它偏差：Windows 本地测试的默认 ProactorEventLoop 不受 psycopg 异步连接支持，因此 `test_async_db.py` 使用 Selector event-loop policy fixture；当前 pytest-asyncio 1.4.0 与 Python 3.14 会对此兼容方式给出弃用警告。当前环境无 WSL `/bin/bash`，阶段中的 shell 包装脚本使用其内部等价的 `uv run` 命令逐项验证。
+
+### 2026-09-17 数据库排序规则修复与补验
+
+- 原因：当前 pgvector 镜像提供的 libc collation 为 2.36，既有 `app`、`postgres`、`template1` 记录为 2.41。检查未发现 public schema 的分区表、物化视图、CHECK 或排斥约束；修复所有索引而非仅更新版本号。
+- 操作前分别执行 `pg_dump -Fc`，备份保存在 `C:/Users/ZhangYan/AppData/Local/AgentHub/backups/collation-20260917/`，三个归档均通过 `pg_restore --list` 检查。`app.dump` 为 48830 字节；未重置数据卷、未删除业务数据。
+- 对三个库逐个执行 `REINDEX DATABASE <db>`、`REINDEX SYSTEM <db>`，成功后再 `ALTER DATABASE <db> REFRESH COLLATION VERSION`；每个连接设置 lock_timeout 5 秒、statement_timeout 60 秒。依据：[PostgreSQL collation 修复说明](https://www.postgresql.org/docs/18/sql-altercollation.html)。
+- 结果：三个库记录版本和运行版本均为 2.36，重连不再产生该告警，app 无无效索引。`template0` 的版本为空是原有状态，未修改；另外两个旧测试库本来就是 2.36。
+- 修复前后 app 全部十张 public 表（含 alembic_version）的行数和内容 MD5 一致，记录在备份目录的 `app-before.txt` / `app-after.txt`。当时 Run 29 条、RunEvent 141 条、消息 47 条，校验未暴露正文或凭据。
+- 修复后使用默认 template1 成功创建 `agenthub_phase0102_audit`，历史迁移往返和全量测试均只在该专用库执行。测试后保留其空业务表，未回退 app 库。
+- MinIO 登录截图为备份目录内 `minio-login.png`；后端 coverage 位于 `backend/htmlcov/index.html`；Agent 管理浏览器验证含登录共 2 项通过。
+- Windows worker 独立兼容验证通过，生产依赖未新增 arq。启动和已确认限制见 [阶段 06 Windows 约定](06-async-worker.md#windows-本地-worker-兼容约定)。本次没有消除 pytest-asyncio 的历史 policy 弃用告警，不影响当前测试通过。

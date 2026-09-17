@@ -7,6 +7,9 @@ test("manage an agent and its published versions", async ({ page }) => {
   await page.goto("/agents")
   await expect(page).toHaveTitle("Agents - AgentHub")
   await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible()
+  await expect(
+    page.getByRole("link", { name: "Items", exact: true }),
+  ).toHaveCount(0)
 
   await page.getByTestId("add-agent-button").click()
   await page.getByTestId("agent-name-input").fill(agentName)
@@ -43,6 +46,30 @@ test("manage an agent and its published versions", async ({ page }) => {
   await page.getByTestId("publish-version-confirm").click()
   await expect(page.getByText("Agent version published")).toBeVisible()
   await expect(page.getByText("v1", { exact: true })).toBeVisible()
+
+  const secondPrompt = `${updatedPrompt} Revised for version two.`
+  await page.getByRole("tab", { name: "Configuration" }).click()
+  await page.getByTestId("configuration-system-prompt-input").fill(secondPrompt)
+  await page.getByTestId("save-configuration-button").click()
+  await expect(page.getByText("Agent configuration saved")).toBeVisible()
+  await page.getByTestId("versions-tab").click()
+  await page.getByTestId("publish-version-button").click()
+  await page.getByTestId("version-changelog-input").fill("Second version")
+  await page.getByTestId("publish-version-confirm").click()
+  await expect(page.getByText("v2", { exact: true })).toBeVisible()
+
+  const firstVersion = page
+    .getByRole("row")
+    .filter({ has: page.getByText("v1", { exact: true }) })
+  await firstVersion.getByRole("button", { name: "Snapshot" }).click()
+  await expect(page.locator("pre")).toContainText(updatedPrompt)
+  await expect(page.locator("pre")).not.toContainText(secondPrompt)
+  await firstVersion.getByRole("button", { name: "Snapshot" }).click()
+  const secondVersion = page
+    .getByRole("row")
+    .filter({ has: page.getByText("v2", { exact: true }) })
+  await secondVersion.getByRole("button", { name: "Snapshot" }).click()
+  await expect(page.locator("pre")).toContainText(secondPrompt)
 
   await page.getByRole("link", { name: "Back to agents" }).click()
   const updatedAgentRow = page.getByRole("row").filter({ hasText: agentName })

@@ -51,8 +51,8 @@ export default function RunAgent({
     defaultValues: { message: "" },
   })
   const mutation = useMutation({
-    mutationFn: (data: RunForm) =>
-      RunsService.createRun({
+    mutationFn: (data: RunForm & { asyncMode: boolean }) =>
+      (data.asyncMode ? RunsService.createAsyncRun : RunsService.createRun)({
         body: {
           agent_version_id: versionId,
           input: { message: data.message },
@@ -93,13 +93,15 @@ export default function RunAgent({
           <DialogTitle>Run version {versionNumber}</DialogTitle>
           <DialogDescription>
             Send a message to this published version. Execution may take several
-            seconds.
+            seconds. Submit async to follow progress on the Run page.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
             className="space-y-4"
-            onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+            onSubmit={form.handleSubmit((data) =>
+              mutation.mutate({ ...data, asyncMode: false }),
+            )}
           >
             <FormField
               control={form.control}
@@ -125,11 +127,26 @@ export default function RunAgent({
             )}
             <DialogFooter>
               <LoadingButton
+                type="button"
+                variant="outline"
+                loading={mutation.isPending && mutation.variables?.asyncMode}
+                disabled={mutation.isPending}
+                data-testid="run-async-submit-button"
+                onClick={() => {
+                  form.handleSubmit((data) =>
+                    mutation.mutate({ ...data, asyncMode: true }),
+                  )()
+                }}
+              >
+                Submit async
+              </LoadingButton>
+              <LoadingButton
                 type="submit"
-                loading={mutation.isPending}
+                loading={mutation.isPending && !mutation.variables?.asyncMode}
+                disabled={mutation.isPending}
                 data-testid="run-submit-button"
               >
-                Run
+                Quick run
               </LoadingButton>
             </DialogFooter>
           </form>

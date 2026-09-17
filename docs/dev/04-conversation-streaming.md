@@ -533,8 +533,12 @@ data: <json>\n
 | `node_started` | `{"node": "call_model"}` | 节点开始 |
 | `node_finished` | `{"node": "call_model"}` | 节点结束 |
 | `model_chunk` | `{"text": "部分"}` | 回复分片，前端追加到当前气泡 |
+| `tool_called` | `{"tool": "calculator", "args": {"expression": "2*21"}, "index": 0}` | 工具开始；index 是本次 Run 内的调用序号，落库 |
+| `tool_result` | `{"tool": "calculator", "index": 0, "result": "42", "ok": true, "error": null, "duration_ms": 12}` | 按 index 配对，可乱序完成；结果截断至 2000 字符，落库 |
 | `run_finished` | `{"run_id": "...", "message_id": "...", "prompt_tokens": 10, "completion_tokens": 5, "cost_usd": "0.000012"}` | 成功结束 |
 | `run_failed` | `{"run_id": "...", "error": "..."}` | 失败结束 |
+
+阶段 05：`node` 可为 `tools`；`run_finished` 新增 `truncated_by_max_iterations` 布尔值。工具对象通过闭包注入，不进入状态；中间工具交换由 RunEvent 保留，会话仅保存最终助手文本，迭代截断时去除未配对的 tool_calls。
 
 序列化辅助函数：
 

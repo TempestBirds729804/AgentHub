@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.agent import Agent
     from app.models.conversation import Conversation
     from app.models.run import Run
+    from app.models.tool import Tool
 
 
 class UserBase(SQLModel):
@@ -50,6 +51,7 @@ class UpdatePassword(SQLModel):
 
 
 class User(UserBase, table=True):
+    tools: list["Tool"] = Relationship(back_populates="owner", cascade_delete=True)  # noqa: UP037
     conversations: list["Conversation"] = Relationship(  # noqa: UP037
         back_populates="owner", cascade_delete=True
     )

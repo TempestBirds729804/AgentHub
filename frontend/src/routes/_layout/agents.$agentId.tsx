@@ -12,6 +12,7 @@ import { z } from "zod"
 
 import { type AgentPublic, AgentsService } from "@/client"
 import RunAgent from "@/components/Runs/RunAgent"
+import ToolSelection from "@/components/Tools/ToolSelection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,6 +56,7 @@ export const Route = createFileRoute("/_layout/agents/$agentId")({
 })
 
 const configurationSchema = z.object({
+  tool_ids: z.array(z.string()),
   name: z.string().min(1, { message: "Name is required" }),
   description: z.string().optional(),
   system_prompt: z.string(),
@@ -84,6 +86,7 @@ function ConfigurationForm({ agent }: { agent: AgentPublic }) {
     resolver: zodResolver(configurationSchema),
     mode: "onBlur",
     defaultValues: {
+      tool_ids: agent.tool_ids ?? [],
       name: agent.name,
       description: agent.description ?? "",
       system_prompt: agent.system_prompt ?? "",
@@ -100,6 +103,7 @@ function ConfigurationForm({ agent }: { agent: AgentPublic }) {
       AgentsService.updateAgent({
         path: { id: agent.id },
         body: {
+          tool_ids: data.tool_ids,
           name: data.name,
           description: data.description,
           system_prompt: data.system_prompt,
@@ -246,6 +250,19 @@ function ConfigurationForm({ agent }: { agent: AgentPublic }) {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="tool_ids"
+              render={({ field }) => (
+                <FormItem>
+                  <ToolSelection
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div>
               <LoadingButton
                 type="submit"
@@ -376,6 +393,9 @@ function Versions({ agentId }: { agentId: string }) {
                         <Badge variant="secondary">
                           v{version.version_number}
                         </Badge>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {version.tool_names?.join(", ") || "No tools"}
+                        </p>
                       </TableCell>
                       <TableCell>{version.changelog || "—"}</TableCell>
                       <TableCell>

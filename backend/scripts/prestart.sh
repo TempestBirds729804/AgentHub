@@ -9,5 +9,8 @@ python app/backend_pre_start.py
 # Run migrations
 alembic upgrade head
 
+# LangGraph maintains its own tables outside Alembic.
+python app/setup_checkpointer.py
+
 # Create initial data in DB
 python app/initial_data.py

@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -13,3 +14,4 @@ class AgentSnapshot(BaseModel):
     llm_settings: dict[str, Any] = Field(default_factory=dict)
     max_iterations: int = 10
     timeout_seconds: int = 300
+    tool_ids: list[uuid.UUID] = Field(default_factory=list)

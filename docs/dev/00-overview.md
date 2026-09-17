@@ -281,20 +281,21 @@ flowchart TD
     P03["03 LangGraph Runtime<br/>适配器 + 状态图 + Run"]
     P04["04 会话与流式<br/>Conversation + SSE + Playground"]
     P05["05 工具系统<br/>Function / HTTP / MCP"]
+    P051["05_1 独立 MCP 服务<br/>Streamable HTTP / 真实调用"]
     P06["06 异步与恢复<br/>arq + Checkpoint + 限流"]
     P07["07 人工审批"]
     P08["08 知识库 RAG"]
     P09["09 运行评测"]
     P10["10 可观测性"]
 
-    P01 --> P02 --> P03 --> P04 --> P05 --> P06
+    P01 --> P02 --> P03 --> P04 --> P05 --> P051 --> P06
     P06 --> P07
     P06 --> P08
     P06 --> P09
     P06 --> P10
 ```
 
-01 到 06 是一条串行主干，必须按序完成。07 到 10 是四个独立分支，都只依赖 06。
+01 到 06 是一条串行主干，05 与 06 之间必须完成 [05_1 独立 MCP 服务](05_1-mcp-service.md)。07 到 10 是四个独立分支，都只直接依赖 06。
 
 **里程碑**：
 - 阶段 04 结束时，平台已经能在 Playground 里跟 Agent 多轮对话并看到流式输出 —— 这是第一个可演示形态
@@ -314,6 +315,7 @@ flowchart TD
 | 03 | `POST /api/v1/runs` 用真实模型跑通一次对话，Run 表记录了状态/耗时/Token/费用，RunEvent 表有完整节点轨迹，前端能看到 Run 详情 |
 | 04 | Playground 页面里输入问题，回复逐字出现，刷新页面后历史对话仍在，第二轮提问能引用第一轮上下文 |
 | 05 | 注册一个 HTTP 工具后，Agent 能自主决定调用它并把结果用进回复，工具超时和参数校验失败都有明确错误 |
+| 05_1 | 独立只读 MCP 服务通过 Streamable HTTP 被 Tools 和真实 Agent 调用，Compose 网络、安全边界、失败恢复及调用轨迹验收通过 |
 | 06 | 提交一个异步 Run，worker 拉起并执行，中途 kill worker 后重启能从 checkpoint 续跑而不是重头开始 |
 | 07 | 给工具打上 `requires_approval` 后，Run 停在 `waiting_approval`，UI 上点批准后执行继续并完成 |
 | 08 | 上传一个 PDF，等状态变 ready，提问时 Agent 引用文档内容并在回复里标出来源 |

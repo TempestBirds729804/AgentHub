@@ -2,12 +2,68 @@
 
 ## 前置依赖
 
-阶段 [05-tools.md](05-tools.md) 的验收清单全部通过。特别确认：
+阶段 [05_1-mcp-service.md](05_1-mcp-service.md) 的验收清单全部通过（其前置为 05）。特别确认：
 
 - 工具调用在 Playground 里可用，能看到工具块
 - SSRF 防护和 `max_iterations` 守卫的测试全部通过
+- 独立 `mcp-docs` 服务可用，真实模型经 Streamable HTTP 调用已验证
+- 已明确主机与 Compose 地址，定向 MCP 信任配置生效，全局私网与 stdio 开关仍关闭
+
+### MCP 接入约定（本阶段必须落实）
+
+遵循 [05_1 的后续使用契约](05_1-mcp-service.md#后续阶段的使用契约)，在下述 worker、恢复和测试任务中落实：
+
+- worker 能访问 `http://mcp-docs:3001/mcp`，透传与 API 相同的 `MCP_TRUSTED_SERVER_URLS`；不使用容器内 localhost 指向外部服务。
+- worker 内创建自己的 MCP 客户端，shutdown 时调用 05_1 的异步关闭入口。不要复用 API 进程的连接、事件循环或缓存。
+- 恢复时按 AgentVersion 重新加载工具并建立连接；MCP 会话、工具实例、future 不进入 Checkpoint。MCP 服务的无状态模式不等于 LangGraph 无状态。
+- 不因 worker 重投而在 MCP 执行器里增加自动调用重试。外部工具执行成功、checkpoint 尚未提交时进程崩溃，仍可能重复调用；使用只读文档工具验证此边界，不宣称 exactly-once。将来有副作用工具需独立设计幂等机制。
+- 工具失败、超时、取消、同名调用 index 及结果继续使用 05 的 ToolResult / RunEvent 契约，经 Redis Stream 转发后语义不变。
 
 ## 本阶段目标
+
+### Windows 本地 worker 兼容约定
+
+2026-09-17 已在阶段 06 实现前完成独立兼容探针；这不是阶段 06 功能验收。环境为 Windows、Python 3.14.5、arq 0.28.0、redis-py 5.3.1、Redis server 8.10.1，数据库使用 `agenthub_phase0102_audit`。
+
+| 启动 / 退出条件 | 实测结果 |
+|---|---|
+| 默认 ProactorEventLoop | Redis 入队和消费成功，异步 PostgreSQL 查询失败：psycopg 不支持该事件循环 |
+| `asyncio.Runner(loop_factory=asyncio.SelectorEventLoop)`，在 async 函数内创建 Worker | 入队、消费、`SELECT 1`、结果读取均成功 |
+| Selector + Worker 默认 `handle_signals=True` | arq 捕获 Windows 不支持 `loop.add_signal_handler` 的异常；程序调用 `handle_sig(SIGINT)` 能取消执行中任务，`close()` 完成并释放连接 |
+| `handle_signals=False`，直接调用 arq 0.28.0 的 `close()` | 失败：`signal.SIGUSR1` 在 Windows 不存在。不能直接用这个选项作为 Windows 修复 |
+
+后续实现要求：
+
+1. Linux / Compose 继续使用常规 arq 启动；Windows 本地入口显式使用 Runner 的 Selector loop factory，不新增已弃用的全局 event-loop policy。
+2. 在 Runner 管理的异步函数内创建 Worker，调用 `async_run()`。在 finally 中明确取消 worker 正在执行的任务、等待 `close()` 和项目 shutdown 钩子完成；保留 `handle_signals=True`，由 Runner/入口负责 Windows 控制台退出处理。
+3. 不在本阶段之前修改生产 worker 文件。真正的 Windows Ctrl+C、watch 重启、kill/restart 后 Run 状态与 checkpoint 恢复仍须阶段 06 验证；本次只验证了程序触发的 SIGINT 处理路径，不能将两者混写。
+4. 这些结论针对上述版本。阶段 06 安装 arq 后再次运行探针，若版本不同，重新确认关闭逻辑；不得通过假造 `signal.SIGUSR1` 或修改 site-packages 绕过。
+
+探针文件为 [check_windows_worker.py](../../backend/scripts/check_windows_worker.py)。它仅执行只读数据库查询，使用独立 UUID 队列并删除自身 Redis 键，不写业务 Run，不调用模型。主动取消用例会产生 arq 的 CancelledError 日志，脚本退出码 0 才表示预期检查通过。
+
+常规隔离依赖命令（backend 目录）：
+
+```powershell
+uv run --with arq==0.28.0 python scripts/check_windows_worker.py
+```
+
+本机 `uv run --with` 曾出现 Windows PE trampoline 更新“拒绝访问”；这是工具启动失败，不是 arq 任务失败。实际完成验证的替代命令如下，不修改项目 pyproject 或 uv.lock：
+
+```powershell
+$probeDeps = Join-Path $env:LOCALAPPDATA 'AgentHub/worker-probe-deps'
+uv pip install --target $probeDeps arq==0.28.0
+$previousPythonPath = $env:PYTHONPATH
+try {
+    $env:PYTHONPATH = $probeDeps
+    & ../.venv/Scripts/python.exe scripts/check_windows_worker.py
+} finally {
+    $env:PYTHONPATH = $previousPythonPath
+}
+```
+
+脚本使用配置中的 Redis/数据库地址；本次通过进程环境指定专用数据库，未改 `.env`。加 `--loop default` 可复现 Proactor 失败，预期非零退出。参考：[arq Worker 文档及实现](https://arq-docs.helpmanual.io/_modules/arq/worker)。
+
+### 功能目标
 
 这是**主干的最后一个阶段，也是"简历上能称为平台"的分界线**。做完之后系统具备生产后端的核心能力：
 
@@ -285,8 +341,8 @@ await app.ainvoke(initial_state, config=config)
 
 **thread_id 的取值规则**（这是关键决策，写进代码注释）：
 
-- 有 conversation 的 Run：用 `conversation.thread_id`。这样同一会话的多轮对话共享一条 checkpoint 线程，LangGraph 自己就维护了消息历史
-- 无 conversation 的 Run（API 触发、评测）：用 `f"run-{run.id}"`。每次执行一条独立线程
+- 所有异步 Run（包括 conversation）首次用 `f"run-{run.id}-0"`，各轮独立；会话历史由 `message` 表和 `build_context_messages` 提供，避免重复累积。
+- 断点重试保留原 thread_id，并读取 saver 的最新 checkpoint；从头重跑用 `f"run-{run.id}-{run.retry_count}"`，不读取旧线程状态。
 
 Run 表的 `thread_id` 字段记录实际使用的值，恢复时直接读它。
 
@@ -484,19 +540,18 @@ services:
 
 ```yaml
   worker:
-    command: ["arq", "--watch", "app", "app.worker.main.WorkerSettings"]
     environment:
       FASTAPI_ENV: "development"
     develop:
       watch:
         - path: ./backend
-          action: sync
+          action: sync+restart
           target: /app/backend
           ignore:
             - .venv
 ```
 
-`arq --watch` 会在代码变化时自动重启 worker。如果当前 arq 版本没有 `--watch`，用 `watchfiles` 包一层或者手动重启，在偏差记录里写明。
+使用 `docker compose watch worker` 同步源码并重启进程。arq 0.28.0 的 `--watch` 未重新导入应用模块，不能作为源码热重载；Windows 本地入口修改后手动 Ctrl+C 再启动，见偏差记录。
 
 ---
 
@@ -1050,24 +1105,28 @@ Run 详情页根据状态显示不同操作：
 
 ## 阶段验收清单
 
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`（**在 checkpoint 表已存在的情况下**，这是 `include_object` 生效的证明）
-- [ ] `docker compose exec db psql -U postgres -d app -c "\dt"` 能看到 `checkpoints`、`checkpoint_blobs`、`checkpoint_writes`、`checkpoint_migrations` 四张表
-- [ ] `python app/setup_checkpointer.py` 可重复执行不报错
-- [ ] `bash scripts/prestart.sh` 从干净数据库跑通（`docker compose down -v` 后验证）
-- [ ] `docker compose up -d` 后 worker 服务正常启动，日志里有 "Worker starting up"
-- [ ] `uv run pytest tests/ -v` 全绿（需要 Redis 在跑）
-- [ ] 恢复测试通过，且断言了"模型调用次数少于完整执行"
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] `bun run lint` 通过
-- [ ] **手动完成任务 7.8 的端到端崩溃恢复验证**，worker 日志里看到 "Resuming run ... from checkpoint ..."
-- [ ] 手动验证：提交异步 Run 后立刻打开 Run 详情页，能看到事件实时出现
-- [ ] 手动验证：执行中途打开 Run 详情页，能看到**之前已经发生的**事件（Stream 从头读生效）
-- [ ] 手动验证：取消一个 running 的 Run，状态变成 `cancelled`
-- [ ] 手动验证：同时提交 4 个 Run（上限 3），第 4 个返回 429
-- [ ] 手动验证：`docker compose stop redis` 后提交 Run 返回 503 且 Run 落成 failed（不是卡在 queued）
-- [ ] `SELECT status, count(*) FROM run GROUP BY status;` 没有异常卡住的记录
-- [ ] Redis 里没有泄漏的限流计数器：`docker compose exec redis redis-cli keys "agenthub:user:*:running"` 的值都是 0 或键不存在
+- [x] 05_1 全部验收通过；worker 在全局私网开关关闭时能调用 Compose 内真实 MCP 服务。
+- [x] 真实 MCP 工具的异步 Run、Redis 事件流、失败与取消链路通过；worker 关闭无悬挂客户端任务。
+- [x] kill/restart worker 后从 checkpoint 重建 MCP 客户端并完成只读工具任务；记录可能重复调用的边界，连接对象未被序列化。
+
+- [x] `uv run alembic check` 输出 `No new upgrade operations detected.`（**在 checkpoint 表已存在的情况下**，这是 `include_object` 生效的证明）
+- [x] `docker compose exec db psql -U postgres -d app -c "\dt"` 能看到 `checkpoints`、`checkpoint_blobs`、`checkpoint_writes`、`checkpoint_migrations` 四张表
+- [x] `python app/setup_checkpointer.py` 可重复执行不报错
+- [x] `bash scripts/prestart.sh` 从干净数据库跑通（新建专用数据库验证，保留开发 volume）
+- [x] `docker compose up -d --no-deps backend worker` 后 worker 服务正常启动，日志里有 "Worker starting up"
+- [x] `uv run pytest tests/ -v` 全绿（需要 Redis 在跑）
+- [x] 恢复测试通过，且断言了"模型调用次数少于完整执行"
+- [x] `cd backend && bash scripts/lint.sh` 全绿
+- [x] `cd backend && bash scripts/test.sh` 全绿
+- [x] `bun run lint` 通过
+- [x] **手动完成任务 7.8 的端到端崩溃恢复验证**，worker 日志里看到 "Resuming run ... from checkpoint ..."
+- [x] 手动验证：提交异步 Run 后立刻打开 Run 详情页，能看到事件实时出现
+- [x] 手动验证：执行中途打开 Run 详情页，能看到**之前已经发生的**事件（Stream 从头读生效）
+- [x] 手动验证：取消一个 running 的 Run，状态变成 `cancelled`
+- [x] 手动验证：同时提交 4 个 Run（上限 3），第 4 个返回 429
+- [x] 手动验证：`docker compose stop redis` 后提交 Run 返回 503 且 Run 落成 failed（不是卡在 queued）
+- [x] `SELECT status, count(*) FROM run GROUP BY status;` 没有异常卡住的记录
+- [x] Redis 里没有泄漏的限流计数器：`docker compose exec redis redis-cli keys "agenthub:user:*:running"` 的值都是 0 或键不存在
 
 ---
 
@@ -1113,7 +1172,43 @@ arq 会先杀任务，Run 卡在 running。在 `/runs/async` 里校验，或者�
 
 ## 偏差记录
 
-- thread_id 策略（会话级 / Run 级）：
-- arq 版本与 `--watch` 是否可用：
-- 模型调用限流是否实现：
-- 其它偏差：
+- 实施范围（2026-09-17）：配套修改 `backend/pyproject.toml`、`uv.lock`、Run 模型/迁移、生成客户端、`frontend/src/components/Runs/RunAgent.tsx`、现有 SSE/Run Playwright 测试、`compose.deploy.yml` 与 `development.md`；新增阶段 06 专用集成验收代码。它们直接支撑本阶段入口、部署和验收，不改前序业务能力。
+- thread_id 采用 Run 级，首次为 `run-{id}-0`，从头重跑使用新的线程，避免重新读到旧 checkpoint；业务会话历史仍从 message 表组装。
+- 验证使用专用数据库与 Redis DB 15；干净库验收使用新建测试数据库，替代删除开发 Compose volume。
+- arq 0.28.0 的内置 `--watch` 在同一 Python 进程里重建执行循环，未重新导入应用模块；开发容器改用 Compose `sync+restart`。Windows 本地使用 `uv run python -m app.worker.main`，修改代码后 Ctrl+C 再启动，不提供伪热重载。
+- 异步入队时分配 `run-{id}-{retry_count}` 线程作为执行标识；详情页取消和 GET SSE 仅用于异步 Run，避免旧同步执行器覆盖取消状态。Playground 仍通过中断自身流取消，Quick run 保持原行为。
+- coverage 配置增加 `concurrency = ["thread", "greenlet"]`，用于跟踪 SQLAlchemy AsyncSession 的 greenlet 切换；相同 17 项路由测试在显式配置下记录到 95% 路由覆盖，修正默认模式对协程恢复后的漏计。
+
+- 模型调用限流：本阶段实现必需的用户并发 Run 限制；可选的模型 RPM 限流未实现。
+- arq 0.28.0 / redis-py 5.3.1：`max_tries=2` 限制中断重投；普通业务异常落为 failed，需要显式 retry。不能把 `max_tries` 描述为所有异常自动重试两次。
+- 使用独立数据库事务的 PostgreSQL advisory lock 防止相同 Run 并发执行；取消的节点尚未退出时 retry 返回 409。按 Run 保留 Redis slot marker，防止取消、重投、清理重复扣减计数。
+- Redis key 在发布时即设置 TTL，hard kill 无法执行 finally 时仍能过期；普通测试 fixture 只清理本测试创建的 key/job，不使用共享库 FLUSHDB。
+- `git diff --check` 仅报告 `frontend/src/client/sdk.gen.ts` 生成器输出的空白行尾空格；该目录按规范不手改，Biome 配置也排除生成物，保留原始生成结果。
+
+### 实际验收（2026-09-17）
+
+| 验证项 | 实际结果 |
+|---|---|
+| 依赖与镜像 | Windows Python 3.14.5；最终 Linux 镜像 Python 3.14.7，arq 0.28.0；`docker compose build backend` 成功 |
+| 数据库 | 迁移 `dcfa86559b4f` 仅增加 retry_count；专用测试库 downgrade/upgrade 通过；开发库和测试库在四张 checkpoint 表存在时 `alembic check` 均无差异 |
+| 全新数据库启动 | 新建 `agenthub_phase06_prestart_20260917` 后，在容器内执行原始 `bash scripts/prestart.sh`，从基线迁移、checkpoint setup、initial_data 全部成功；没有删除开发 volume |
+| 后端检查 | Windows 四项检查及 Linux 原始 `bash scripts/lint.sh` 全部通过，mypy 检查 69 个源文件 |
+| 普通测试 | Windows `coverage run -m pytest tests/ -q`：171 passed、2 skipped；Linux 原始 `bash scripts/test.sh`：173 passed、无 skipped。8 项 MCP 集成测试按 marker 分开执行 |
+| 覆盖率 | Windows / Linux 均 93%；Windows `coverage report --fail-under=90` 通过。Windows 两项链接权限跳过已在 Linux 完整执行 |
+| 真实 MCP 集成 | `MCP_LIVE_MODEL_TEST=1 uv run pytest -m mcp_integration tests/integration -q`：8 passed；含真实服务成功、掉线重连、超时、取消和后台客户端任务清理 |
+| 浏览器 | `tests/runs.spec.ts tests/sse.spec.ts tests/runs-async.spec.ts` 共 6 passed；真实 MCP 两次工具调用，异步提交、GET SSE 鉴权、执行中刷新后的历史回放及最终完成已验证 |
+| 前端构建 | OpenAPI 客户端按脚本等价步骤生成，`bun run lint`、`bun run --filter frontend build` 通过 |
+| Windows 退出 | 实际终端 Ctrl+C 观察到 worker shutdown；旧兼容探针验证执行中 SIGINT 与资源关闭。原生 Windows 不提供 watch，代码变动后手动重启 |
+| 开发重载 | `docker compose watch --no-up worker` 同步源码并重启新进程，检查容器加载到新 startup 实现，日志含 `Worker starting up`；验收后已关闭 watcher |
+| 运行状态 | 最后查询开发库 succeeded=29、cancelled=9、failed=4，无 queued/running；Redis `agenthub:user:*:running` 无残留键；worker healthy |
+
+进程级验收由 `backend/scripts/check_async_worker.py` 实际执行，证据保存在 `frontend/test-results/phase06-manual/`：
+
+- 恢复 Run：`170afa4f-2ee6-44fe-9071-f0200e12ffea`。第一次真实 MCP 工具结果后 kill worker，将孤立 running 取消后显式 retry，重启 worker；原 Run 成功，保留两次成功工具结果，日志含 `Resuming run ... from checkpoint ...`。
+- 运行中取消：`474076bd-4853-4d1e-b1b5-300ae30c5515`，worker 清理后仍为 cancelled。
+- worker 停止时排队三个 Run，第四个请求返回 429；测试自己的三个排队任务随后取消。
+- Redis 停止时提交返回 503，`3b81fca9-b193-484e-9299-67f45bc5f3ab` 持久化为 failed；结束时已恢复 Redis 和 worker。
+- 崩溃后即刻恢复采用显式 retry；arq 自身 hard-kill 重投受 in-progress TTL 影响。自动重投的执行路径另有取消执行协程后恢复的测试，不把手动 retry 验收描述成即时自动重投。
+- 模型恢复测试断言：完整两次执行需 4 次模型调用，断点恢复总计 3 次，已完成工具仅调用一次；fresh 重跑总计 4 次、工具两次、新 thread_id。
+
+checkpoint 只保存状态，不保存 MCP 客户端对象。若外部工具已完成、对应 checkpoint 尚未提交就崩溃，恢复可能再次调用该工具；本阶段真实验收只使用只读工具，不承诺 exactly-once。浏览器截图及附件在 `frontend/test-results/phase06-final/`；本次保留手工验收资源便于复核，未提交 Git。

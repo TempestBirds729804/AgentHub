@@ -13,6 +13,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    ALLOW_PRIVATE_TOOL_URLS: bool = False
+    ALLOW_STDIO_MCP_TOOLS: bool = False
+    MCP_TRUSTED_SERVER_URLS: list[str] = []
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./backend/)
         env_file="../.env",

@@ -785,18 +785,20 @@ bunx playwright test tests/agents.spec.ts     # 单文件
 
 ## 阶段验收清单
 
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`
-- [ ] `uv run alembic downgrade -2 && uv run alembic upgrade head` 往返无错（覆盖建表和删 item 两个迁移）
-- [ ] `docker compose exec db psql -U postgres -d app -c "\d agent_version"` 能看到表和唯一约束
-- [ ] `docker compose exec db psql -U postgres -d app -c "\dt"` 里**没有** `item` 表
-- [ ] `uv run pytest tests/ -v` 全绿，且测试数量比阶段 01 多（新增了 agent 测试）
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] `rg "ItemsService|ItemPublic" frontend/src/` 无命中
-- [ ] `bash scripts/generate-client.sh` 跑完后 `git status` 里 `frontend/src/client/` 的改动已提交
-- [ ] `bun run lint` 通过
-- [ ] 手动验证：登录后侧栏有 Agents 没有 Items；能创建 Agent；能进详情页改配置并保存；能发布 v1 和 v2；v1 的快照在改过 Agent 之后仍是旧内容；能删除 Agent
-- [ ] `bunx playwright test tests/agents.spec.ts` 通过
+2026-09-17 按当前代码补验；由于当前 head 已是阶段 05，历史迁移使用明确 revision 在专用库验证。代码提交不在本次授权范围，不将“已生成”写成“已提交”。
+
+- [x] app 库与专用测试库 `uv run alembic check` 均无差异
+- [x] 专用库 `93c88b62686b → 88cdef47b355 → head` 往返成功，覆盖创建 Agent / AgentVersion 与删除 Item 两个迁移
+- [x] 查询 app 的 agent_version 约束，确认主键、`UNIQUE (agent_id, version_number)`、CASCADE 外键存在
+- [x] `to_regclass('public.item')` 返回 null，数据库没有 Item 表
+- [x] 当前全量后端 141 项通过，包含 Agent CRUD 4 项和 Agent 路由 14 项
+- [x] lint 脚本内部等价命令 mypy、ty、ruff check/format 均通过
+- [x] test 脚本内部等价命令 coverage run/report/html 通过，覆盖率 90%
+- [x] `rg "ItemsService|ItemPublic" frontend/src/` 无命中
+- [x] 使用 generate-client.sh 的等价流程导出 OpenAPI、生成客户端并执行 lint；生成物保留在工作区，未提交
+- [x] `bun run lint` 和前端 TypeScript/Vite 构建通过
+- [x] 浏览器验证：登录、Agents 导航、无 Items、创建/编辑 Agent、发布 v1/v2、旧快照不变和删除 Agent 全部通过
+- [x] `bunx playwright test tests/agents.spec.ts` 通过（含登录准备共 2 项）
 
 ---
 
@@ -828,4 +830,5 @@ TanStack Router 的动态参数是 `$` 前缀，文件名必须是 `agents.$agen
 ## 偏差记录
 
 - 实际接口路径与本文档不一致之处：
+- 2026-09-17 补验：测试库为 `agenthub_phase0102_audit`，迁移回退不触及 app；Windows 无 bash，执行脚本内部等价命令。扩展现有 agents.spec.ts，实际发布两个不同 prompt 的版本，展开快照验证 v1 保持旧值且 v2 使用新值，最后删除仅该测试创建的 Agent。Playwright 使用 `PLAYWRIGHT_BASE_URL=http://localhost:8000`、`VITE_API_URL=http://127.0.0.1:8000`，报告位于 `frontend/test-results/phase0102-audit/`。不修改用户 `.env`，不提交代码。
 - 其它偏差：当前 SQLModel / SQLAlchemy 会把字符串注解 `"User | None"` 整体解析为类名并导致 mapper 初始化失败；由于 `owner_id` 本身不可空，实际使用与阶段 01 Item 模型相同形式的 `owner: "User"` 前向引用，关系和数据库约束语义不变。为满足“移除 Item 全部痕迹”，同时删除了 `frontend/tests/utils/random.ts` 中仅供已删除 Item E2E 使用的两个随机数据函数，并清理了任务 10 引用表遗漏的 `backend/app/api/routes/users.py` 中 Item import/显式删除逻辑；用户关联 Agent 仍由模型和外键的双层 CASCADE 删除。
