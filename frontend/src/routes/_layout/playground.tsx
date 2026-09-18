@@ -7,7 +7,14 @@ import {
 } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Loader2, MessageSquare, Plus, Send, Square } from "lucide-react"
-import { Fragment, Suspense, useEffect, useRef, useState } from "react"
+import {
+  Fragment,
+  Suspense,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -15,7 +22,11 @@ import {
   AgentsService,
   ConversationsService,
   type ConvMessagePublic,
+  RunsService,
 } from "@/client"
+import ApprovalGroups, {
+  approvalsQuery,
+} from "@/components/Approvals/ApprovalGroups"
 import ToolTrace from "@/components/Tools/ToolTrace"
 import { Button } from "@/components/ui/button"
 import {
@@ -246,6 +257,20 @@ function Chat({
   const [node, setNode] = useState<string | null>(null)
   const [events, setEvents] = useState<SSEEvent[]>([])
   const [runId, setRunId] = useState<string | null>(null)
+  const [waitingApproval, setWaitingApproval] = useState(false)
+  const lastEventId = useRef("0")
+  const approvals = useQuery({
+    ...approvalsQuery(runId ?? ""),
+    enabled: !!runId,
+  })
+  const latestRun = useQuery({
+    queryKey: ["runs", "conversation", id],
+    queryFn: async () =>
+      (await RunsService.readRuns({ query: { conversation_id: id, limit: 1 } }))
+        .data.data[0] ?? null,
+    refetchInterval: 3000,
+    enabled: !streaming,
+  })
   const [truncated, setTruncated] = useState(false)
   const [usage, setUsage] = useState<{
     prompt_tokens: number
@@ -263,6 +288,29 @@ function Chat({
     queryFn: async () =>
       (await ConversationsService.readConversation({ path: { id } })).data,
   })
+  const recoverRun = useEffectEvent((run: typeof latestRun.data) => {
+    if (!run || abortRef.current) return
+    setRunId(run.id)
+    if (run.status === "waiting_approval") {
+      setRunId(run.id)
+      setWaitingApproval(true)
+    } else if (
+      run.status === "running" &&
+      run.thread_id?.startsWith(`run-${run.id}-`)
+    ) {
+      setRunId(run.id)
+      void followRun(run.id)
+    } else if (["succeeded", "failed", "cancelled"].includes(run.status)) {
+      setWaitingApproval(false)
+      void queryClient.invalidateQueries({
+        queryKey: ["conversations", id, "messages"],
+      })
+      void queryClient.invalidateQueries({ queryKey: ["approvals"] })
+    }
+  })
+  useEffect(() => {
+    recoverRun(latestRun.data)
+  }, [latestRun.data])
   useEffect(
     () => () => {
       abortRef.current?.abort()
@@ -275,6 +323,86 @@ function Chat({
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight
   }, [text, history.data?.length, optimisticUser])
 
+  function receive(evt: SSEEvent) {
+    const data = evt.data as Record<string, unknown>
+    if (typeof data.event_id === "string") lastEventId.current = data.event_id
+    if (evt.event !== "model_chunk") setEvents((previous) => [...previous, evt])
+    if (evt.event === "run_started") setRunId(String(data.run_id))
+    if (evt.event === "model_chunk")
+      setText((previous) => previous + String(data.text ?? ""))
+    if (evt.event === "node_started") {
+      setNode(String(data.node))
+      if (data.node === "call_model") setText("")
+    }
+    if (evt.event === "node_finished") setNode(null)
+    if (evt.event === "approval_requested") {
+      setRunId(String(data.run_id))
+      setWaitingApproval(true)
+      void queryClient.invalidateQueries({ queryKey: ["approvals"] })
+      return true
+    }
+    if (evt.event === "run_finished") {
+      setWaitingApproval(false)
+      if (
+        typeof data.prompt_tokens === "number" &&
+        typeof data.completion_tokens === "number"
+      )
+        setUsage({
+          prompt_tokens: data.prompt_tokens,
+          completion_tokens: data.completion_tokens,
+          cost_usd: typeof data.cost_usd === "string" ? data.cost_usd : null,
+        })
+      setTruncated(data.truncated_by_max_iterations === true)
+      return true
+    }
+    if (evt.event === "run_failed") {
+      setWaitingApproval(false)
+      showErrorToast(String(data.error ?? "Run failed"))
+      return true
+    }
+    return false
+  }
+
+  async function finishStream() {
+    await queryClient.invalidateQueries({ queryKey: ["conversations"] })
+    await queryClient.invalidateQueries({ queryKey: ["runs"] })
+    await queryClient.invalidateQueries({ queryKey: ["approvals"] })
+    setOptimisticUser("")
+    setText("")
+    setNode(null)
+    setStreaming(false)
+    onStreaming(false)
+    abortRef.current = null
+  }
+
+  async function followRun(targetRunId: string) {
+    if (abortRef.current) return
+    const controller = new AbortController()
+    abortRef.current = controller
+    setWaitingApproval(false)
+    setStreaming(true)
+    onStreaming(true)
+    try {
+      for await (const evt of streamSSE(
+        `${import.meta.env.VITE_API_URL ?? ""}/api/v1/runs/${targetRunId}/stream?last_event_id=${encodeURIComponent(lastEventId.current)}`,
+        { method: "GET", signal: controller.signal },
+      ))
+        receive(evt)
+    } catch (error) {
+      if (!controller.signal.aborted)
+        showErrorToast(error instanceof Error ? error.message : "Stream failed")
+    } finally {
+      await finishStream()
+    }
+  }
+
+  async function afterDecision() {
+    if (!runId) return
+    const { data } = await RunsService.readRun({ path: { id: runId } })
+    if (data.status === "running" || data.status === "succeeded")
+      await followRun(runId)
+  }
+
   async function send(values: z.infer<typeof schema>) {
     if (abortRef.current) return
     const controller = new AbortController()
@@ -286,6 +414,8 @@ function Chat({
     setEvents([])
     setUsage(null)
     setRunId(null)
+    setWaitingApproval(false)
+    lastEventId.current = "0"
     setTruncated(false)
     form.reset()
     let terminal = false
@@ -294,33 +424,7 @@ function Chat({
         `${import.meta.env.VITE_API_URL ?? ""}/api/v1/conversations/${id}/stream`,
         { body: values, signal: controller.signal },
       )) {
-        // Keep the trace compact; text chunks already appear in the reply bubble.
-        if (evt.event !== "model_chunk")
-          setEvents((previous) => [...previous, evt])
-        const data = evt.data as {
-          text: string
-          node: string
-          run_id: string
-          error: string
-          prompt_tokens: number
-          completion_tokens: number
-          cost_usd: string | null
-          truncated_by_max_iterations: boolean
-        }
-        if (evt.event === "run_started") setRunId(data.run_id)
-        if (evt.event === "model_chunk")
-          setText((previous) => previous + data.text)
-        if (evt.event === "node_started") setNode(data.node)
-        if (evt.event === "node_finished") setNode(null)
-        if (evt.event === "run_finished") {
-          terminal = true
-          setUsage(data)
-          setTruncated(data.truncated_by_max_iterations)
-        }
-        if (evt.event === "run_failed") {
-          terminal = true
-          showErrorToast(data.error)
-        }
+        terminal = receive(evt) || terminal
       }
       if (!terminal)
         throw new Error(
@@ -330,14 +434,7 @@ function Chat({
       if (!controller.signal.aborted)
         showErrorToast(error instanceof Error ? error.message : "Stream failed")
     } finally {
-      await queryClient.invalidateQueries({ queryKey: ["conversations"] })
-      await queryClient.invalidateQueries({ queryKey: ["runs"] })
-      setOptimisticUser("")
-      setText("")
-      setNode(null)
-      setStreaming(false)
-      onStreaming(false)
-      abortRef.current = null
+      await finishStream()
     }
   }
 
@@ -375,7 +472,9 @@ function Chat({
               data-testid="current-node"
             >
               <Loader2 className="size-3 animate-spin" />
-              {node === "tools" ? "executing tools" : node || "Processing"}
+              {node === "execute_tools"
+                ? "executing tools"
+                : node || "Processing"}
             </div>
             <Bubble messageRole="assistant" content={text || "…"} />
           </div>
@@ -387,6 +486,17 @@ function Chat({
           >
             Stopped at the maximum iteration limit. Some tool calls were not
             executed.
+          </p>
+        )}
+        {!!approvals.data?.length && (
+          <ApprovalGroups
+            requests={approvals.data}
+            onDecision={() => void afterDecision()}
+          />
+        )}
+        {waitingApproval && (
+          <p role="status" className="text-sm text-amber-700">
+            Waiting for approval before continuing.
           </p>
         )}
       </div>
@@ -407,7 +517,9 @@ function Chat({
                       aria-label="Message"
                       placeholder="Send a message…"
                       maxLength={20000}
-                      disabled={streaming || !history.isSuccess}
+                      disabled={
+                        streaming || waitingApproval || !history.isSuccess
+                      }
                       data-testid="playground-message"
                     />
                   </FormControl>
@@ -419,7 +531,13 @@ function Chat({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => abortRef.current?.abort()}
+                onClick={() => {
+                  abortRef.current?.abort()
+                  if (runId)
+                    void RunsService.cancelRun({ path: { id: runId } }).catch(
+                      () => {},
+                    )
+                }}
               >
                 <Square />
                 Stop
@@ -428,7 +546,7 @@ function Chat({
               <LoadingButton
                 type="submit"
                 loading={form.formState.isSubmitting}
-                disabled={!history.isSuccess}
+                disabled={waitingApproval || !history.isSuccess}
                 data-testid="send-message"
               >
                 <Send />

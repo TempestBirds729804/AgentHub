@@ -716,22 +716,22 @@ Run 状态是 `waiting_approval` 时，详情页顶部显示醒目的提示条�
 
 ## 阶段验收清单
 
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`
-- [ ] `uv run pytest tests/ -v` 全绿，包括阶段 05 的工具测试（节点替换后没退化）
-- [ ] 批准路径测试通过，断言了工具真的被执行
-- [ ] 拒绝路径测试通过，断言了工具**没有**被执行且 Run 是 `succeeded` 不是 `failed`
-- [ ] 部分审批测试通过（两个请求只决策一个时不恢复）
-- [ ] `approval_required_tools` 是 list，带 checkpoint 的图能正常序列化状态
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] `bun run lint` 通过
-- [ ] 手动完成任务 8.5 的七步验证，特别是第 7 步模型对拒绝的合理回应
-- [ ] 手动验证：审批中心的 Badge 数量正确，处理完归零
-- [ ] 手动验证：一轮多个工具调用时，审批卡片分组正确，全部决策后才恢复
-- [ ] 手动验证：Playground 里审批后能继续看到后续事件，且没有重复事件
-- [ ] 手动验证：取消一个 `waiting_approval` 的 Run，审批请求变 expired
-- [ ] `SELECT status, count(*) FROM run GROUP BY status;` 没有异常卡住的记录
-- [ ] `SELECT status, count(*) FROM approval_request GROUP BY status;` 没有孤立的 pending（对应的 Run 已经终态）
+- [x] `uv run alembic check` 输出 `No new upgrade operations detected.`；开发库和独立测试库均已验证。
+- [x] 完整 pytest 通过，包括阶段 05 工具回归；最终 Linux 原始 test 脚本为 191 passed、10 deselected（集成单独运行）。
+- [x] 批准路径测试通过，断言了工具真的被执行。
+- [x] 拒绝路径测试通过，断言工具没有执行且 Run 为 `succeeded`，模型收到拒绝理由。
+- [x] 部分审批测试通过；并发决策只入队一次，取消与决策竞争也有覆盖。
+- [x] `approval_required_tools` 为 list，异步读取 checkpoint 验证序列化及 interrupt 内容。
+- [x] Linux 原始 `bash scripts/lint.sh` 全绿；Windows 等价四项检查通过。
+- [x] Linux 原始 `bash scripts/test.sh` 全绿，覆盖率 93%。
+- [x] `bun run lint`、TypeScript/Vite 生产构建通过。
+- [x] 任务 8.5 真实模型浏览器闭环通过；按 05_1 契约使用只读 MCP 代替 HTTP 演示，拒绝后模型解释原因并提供替代方案。
+- [x] 浏览器验证 Badge 数量 2 → 1 → 0，以及批量批准/拒绝。
+- [x] 真实模型同轮发出两个 calculator 调用，卡片按 Run 分组，全部决策后才恢复。
+- [x] Playground 内联审批、刷新找回 pending、带游标续流及无重复工具事件均通过。
+- [x] 浏览器取消待审批 Run 后请求变 `expired`。
+- [x] 开发库及独立真实验收库无 queued/running/waiting_approval 遗留。
+- [x] 独立验收库 pending 数量 0，终态 Run 对应的孤立 pending 数量 0。
 
 ---
 
@@ -771,8 +771,36 @@ LangGraph 各版本差异较大。先在 REPL 里打印实际结构再写代码�
 
 ## 偏差记录
 
-- `interrupt()` 是否可用，实际方案：
-- `aget_state` 返回结构中判断暂停和读取 interrupt value 的实际字段路径：
-- 是否实现 Agent 级审批覆盖：
-- 是否实现审批超时：
-- 其它偏差：
+- 验收配套新增 `backend/tests/integration/test_approval_mcp.py`、`frontend/tests/approvals.spec.ts`，复用既有真实 MCP 服务 fixture；Run 列表增加可选 `conversation_id` 过滤，使刷新后的 Playground 能找回待审批 Run。没有修改用户环境文件。
+
+- 2026-09-18 实施范围：配套修改 `models/run.py`（双向级联）、`services/tool_service.py`（读取审批标记）、`services/event_bus.py`（暂停及 SSE 游标）、`api/routes/conversations.py`（Playground checkpoint 执行及待审批会话互斥）、生成客户端、现有 SSE/运行状态组件和相关测试；新增 `tests/utils/approval.py` 及审批 UI 组件。均直接服务本阶段审批闭环。
+- 本阶段采用工具级 `requires_approval`，不实现可选 Agent 级覆盖和自动审批超时；取消会使未决审批过期。
+- 本机探针确认 `interrupt` / `Command` 可用：`StateSnapshot.next=('gate',)`，中断值位于 `state.tasks[0].interrupts[0].value`，checkpoint ID 位于 `state.config['configurable']['checkpoint_id']`；恢复后节点正常完成。
+
+- 执行路径：有审批工具的同步 Run 与 Playground 复用 checkpoint 执行器；无审批工具保留原同步路径。暂停后由 `resume_run_task` 在 worker 中重新加载工具和数据库决策，使用 `Command(resume=...)` 恢复。恢复又遇到审批时复用同一逻辑。
+- 并发与审计：决策先锁 Run 再锁 ApprovalRequest，避免同轮不同请求各自锁行却漏触发恢复；请求按 `(run_id, checkpoint_id, tool_call_id)` 唯一，保留每轮决策。取消使 pending 过期，过期 checkpoint 不能直接恢复执行工具，须选择从头重跑。队列不可用时保留已保存决策、Run 标记 failed 并返回 503，可重试 Run 恢复。
+- 恢复任务重投以稳定的 Run 重试次数识别任务；不以不断推进的当前 checkpoint ID 判定任务过时。测试在获批工具结果持久化后取消执行协程，再用原任务 ID 重投，确认成功且工具仅调用一次。
+- Redis Stream 将事件 ID 放入 SSE `id` 和 payload 的 `event_id`；订阅接受 `last_event_id`。重放遇到旧 `approval_requested` 不提前结束，读完事件后根据数据库 waiting 状态结束，避免恢复后的订阅卡在旧暂停点。
+- Windows 使用现有脚本内部等价命令生成 OpenAPI/客户端（设置 `FASTAPI_ENV=development`），生成客户端及路由树未手改。`git diff --check` 的两条尾部空白来自 `sdk.gen.ts` 生成器，按仓库约定保留。
+
+### 实际验收（2026-09-18）
+
+| 验证项 | 实际结果 |
+|---|---|
+| 数据库迁移 | `1b01bc705599`，仅新增 approval_request；JSONB、varchar(32)、CASCADE/SET NULL、索引和唯一约束已检查。测试库 `head → dcfa86559b4f → head` 往返通过；checkpoint 表存在时 Alembic check 无差异 |
+| 隔离 | 自动测试使用 `agenthub_phase07_test` / Redis DB 15；真实验收使用 `agenthub_phase07_live` / Redis DB 14；未清理开发库数据、未修改用户 .env |
+| 后端检查 | mypy 检查 72 个文件；ty、Ruff check/format 全通过。Linux 容器执行原始 lint/test 脚本，最终 191 passed、无 skip，覆盖率 93% |
+| Windows | 完整普通回归 187 passed、2 skipped，后补 SSE 游标和审批重投测试通过；Windows 的两项链接权限跳过在 Linux 实际通过 |
+| MCP 集成 | `MCP_LIVE_MODEL_TEST=1 uv run pytest tests/integration -m mcp_integration -q`：10 passed；其中审批两项包装观察真实 SDK call_tool，并继续调用真实服务，证明批准前及拒绝后无 tools/call，批准后输出有效 |
+| 浏览器 | 审批/SSE 首轮 7 passed，分组/批量/真实同轮双调用补验 3 passed，既有 Agents/Runs/Tools 回归 7 passed（各次含登录准备） |
+| 构建 | 前端 TypeScript/Vite 构建、Docker backend 镜像构建通过；未进行生产部署或 Git 提交 |
+| 实际状态 | 真实库 succeeded=3、cancelled=1；approval approved=2、rejected=2、expired=1；无 pending 和限流 slot 残留。开发库仍 succeeded=29、failed=4、cancelled=9 |
+
+真实模型使用 `.env` 配置的 `deepseek-flash` / `https://api.deepseek.com`，API/worker 仅信任 `http://127.0.0.1:3007/mcp`；未开启全局私网或 stdio 豁免。单独启动本机 API（8007）、worker 和 MCP（3007）完成验证，未替换开发 Compose 后端。批量启动命令曾被自动审批检查拦截（无具体原因），改为各个可追踪的工具进程后成功。
+
+- 批准：`d836c8b4-7a29-4ec0-867f-4cf4706052e5`，审批前零工具调用，批准后读取 06 文档并回答。
+- 拒绝：`4443667c-94c3-4a66-8758-652ac935070b`，零工具调用，模型说明「too risky，请不要读取文档」并给出粘贴内容等替代方案，Run succeeded。
+- 取消：`1eb5d86a-eb85-4750-acae-a3bb64ccd6bd`，Run cancelled、审批 expired。
+- 同轮双调用：`21fb25ce-36bb-4207-9808-950ccba3e975`，第一项批准后仍 waiting，第二项拒绝后恢复，仅一项工具执行，Run succeeded。
+
+截图已实际打开检查，位于 `frontend/test-results/phase07-browser/` 与 `frontend/test-results/phase07-parallel/`；既有页面回归输出位于 `frontend/test-results/phase07-regression/`。真实验收数据保留供复核。崩溃发生在外部工具完成但 checkpoint 未提交之间，仍可能重放调用，沿用阶段 06 的边界，不承诺 exactly-once。

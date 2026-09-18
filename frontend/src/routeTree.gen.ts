@@ -17,6 +17,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutAgentsRouteImport } from './routes/_layout/agents'
+import { Route as LayoutApprovalsRouteImport } from './routes/_layout/approvals'
 import { Route as LayoutPlaygroundRouteImport } from './routes/_layout/playground'
 import { Route as LayoutRunsRouteImport } from './routes/_layout/runs'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
@@ -63,6 +64,11 @@ const LayoutAgentsRoute = LayoutAgentsRouteImport.update({
   path: '/agents',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutApprovalsRoute = LayoutApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutPlaygroundRoute = LayoutPlaygroundRouteImport.update({
   id: '/playground',
   path: '/playground',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/agents': typeof LayoutAgentsRouteWithChildren
+  '/approvals': typeof LayoutApprovalsRoute
   '/playground': typeof LayoutPlaygroundRoute
   '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/agents': typeof LayoutAgentsRouteWithChildren
+  '/approvals': typeof LayoutApprovalsRoute
   '/playground': typeof LayoutPlaygroundRoute
   '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/agents': typeof LayoutAgentsRouteWithChildren
+  '/_layout/approvals': typeof LayoutApprovalsRoute
   '/_layout/playground': typeof LayoutPlaygroundRoute
   '/_layout/runs': typeof LayoutRunsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/agents'
+    | '/approvals'
     | '/playground'
     | '/runs'
     | '/settings'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/agents'
+    | '/approvals'
     | '/playground'
     | '/runs'
     | '/settings'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/agents'
+    | '/_layout/approvals'
     | '/_layout/playground'
     | '/_layout/runs'
     | '/_layout/settings'
@@ -256,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAgentsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/approvals': {
+      id: '/_layout/approvals'
+      path: '/approvals'
+      fullPath: '/approvals'
+      preLoaderRoute: typeof LayoutApprovalsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/playground': {
       id: '/_layout/playground'
       path: '/playground'
@@ -328,6 +347,7 @@ const LayoutRunsRouteWithChildren = LayoutRunsRoute._addFileChildren(
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutAgentsRoute: typeof LayoutAgentsRouteWithChildren
+  LayoutApprovalsRoute: typeof LayoutApprovalsRoute
   LayoutPlaygroundRoute: typeof LayoutPlaygroundRoute
   LayoutRunsRoute: typeof LayoutRunsRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -338,6 +358,7 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutAgentsRoute: LayoutAgentsRouteWithChildren,
+  LayoutApprovalsRoute: LayoutApprovalsRoute,
   LayoutPlaygroundRoute: LayoutPlaygroundRoute,
   LayoutRunsRoute: LayoutRunsRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,

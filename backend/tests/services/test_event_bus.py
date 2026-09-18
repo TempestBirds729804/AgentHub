@@ -82,6 +82,7 @@ def test_active_sse_replay_and_database_terminal_fallback(
                     "run_id": str(run_id),
                     "status": "failed",
                     "error": "worker disappeared",
+                    "output": None,
                 },
             )
         ]

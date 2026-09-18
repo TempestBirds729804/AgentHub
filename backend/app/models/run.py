@@ -12,6 +12,7 @@ from app.models.base import get_datetime_utc
 
 if TYPE_CHECKING:
     from app.models.agent import AgentVersion
+    from app.models.approval import ApprovalRequest
     from app.models.user import User
 
 
@@ -84,6 +85,9 @@ class Run(SQLModel, table=True):
     owner: "User" = Relationship(back_populates="runs")  # noqa: UP037
     agent_version: "AgentVersion" = Relationship(back_populates="runs")  # noqa: UP037
     events: list["RunEvent"] = Relationship(  # noqa: UP037
+        back_populates="run", cascade_delete=True
+    )
+    approvals: list["ApprovalRequest"] = Relationship(  # noqa: UP037
         back_populates="run", cascade_delete=True
     )
 

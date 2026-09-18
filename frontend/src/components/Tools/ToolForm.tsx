@@ -565,15 +565,17 @@ function Editor({ tool, onSaved }: { tool?: ToolPublic; onSaved: () => void }) {
                     />
                   </FormControl>
                   <FormLabel>
-                    {name === "is_active"
-                      ? "Active"
-                      : "Requires approval (available in a later phase)"}
+                    {name === "is_active" ? "Active" : "Requires approval"}
                   </FormLabel>
                 </FormItem>
               )}
             />
           ))}
         </div>
+        <p className="text-sm text-muted-foreground">
+          When approval is required, the agent will pause and wait for your
+          approval before each call to this tool.
+        </p>
         <LoadingButton type="submit" loading={mutation.isPending}>
           Save tool
         </LoadingButton>

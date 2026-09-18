@@ -1,4 +1,14 @@
-import { Activity, Bot, Home, MessageSquare, Users, Wrench } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import {
+  Activity,
+  Bot,
+  Home,
+  MessageSquare,
+  ShieldCheck,
+  Users,
+  Wrench,
+} from "lucide-react"
+import { ApprovalsService } from "@/client"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
@@ -22,10 +32,29 @@ const baseItems: Item[] = [
 
 export function AppSidebar() {
   const { user: currentUser } = useAuth()
+  const { data: pendingCount } = useQuery({
+    queryKey: ["approvals", "pending-count"],
+    queryFn: async () =>
+      (
+        await ApprovalsService.readApprovals({
+          query: { status: "pending", limit: 1 },
+        })
+      ).data.count,
+    refetchInterval: 30000,
+  })
+  const navigation: Item[] = [
+    ...baseItems,
+    {
+      icon: ShieldCheck,
+      title: "Approvals",
+      path: "/approvals",
+      badge: pendingCount,
+    },
+  ]
 
   const items = currentUser?.is_superuser
-    ? [...baseItems, { icon: Users, title: "Admin", path: "/admin" }]
-    : baseItems
+    ? [...navigation, { icon: Users, title: "Admin", path: "/admin" }]
+    : navigation
 
   return (
     <Sidebar collapsible="icon">

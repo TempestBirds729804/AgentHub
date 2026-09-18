@@ -237,6 +237,96 @@ export type AgentsPublic = {
 };
 
 /**
+ * ApprovalDecision
+ */
+export type ApprovalDecision = {
+    /**
+     * Approved
+     */
+    approved: boolean;
+    /**
+     * Rejection Reason
+     */
+    rejection_reason?: string | null;
+};
+
+/**
+ * ApprovalRequestPublic
+ */
+export type ApprovalRequestPublic = {
+    /**
+     * Tool Name
+     */
+    tool_name: string;
+    /**
+     * Tool Call Id
+     */
+    tool_call_id: string;
+    /**
+     * Tool Args
+     */
+    tool_args?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Reason
+     */
+    reason?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Run Id
+     */
+    run_id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    status: ApprovalStatus;
+    /**
+     * Resolved By Id
+     */
+    resolved_by_id?: string | null;
+    /**
+     * Resolved At
+     */
+    resolved_at?: string | null;
+    /**
+     * Rejection Reason
+     */
+    rejection_reason?: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Agent Name
+     */
+    agent_name?: string | null;
+};
+
+/**
+ * ApprovalRequestsPublic
+ */
+export type ApprovalRequestsPublic = {
+    /**
+     * Data
+     */
+    data: Array<ApprovalRequestPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * ApprovalStatus
+ */
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+
+/**
  * Body_login-login_access_token
  */
 export type Body_login_login_access_token = {
@@ -1063,6 +1153,108 @@ export type ValidationError = {
         [key: string]: unknown;
     };
 };
+
+export type approvalsReadApprovalsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: ApprovalStatus | null;
+        /**
+         * Run Id
+         */
+        run_id?: string | null;
+    };
+    url: '/api/v1/approvals/';
+};
+
+export type approvalsReadApprovalsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type approvalsReadApprovalsError = approvalsReadApprovalsErrors[keyof approvalsReadApprovalsErrors];
+
+export type approvalsReadApprovalsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApprovalRequestsPublic;
+};
+
+export type approvalsReadApprovalsResponse = approvalsReadApprovalsResponses[keyof approvalsReadApprovalsResponses];
+
+export type approvalsReadApprovalData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/approvals/{id}';
+};
+
+export type approvalsReadApprovalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type approvalsReadApprovalError = approvalsReadApprovalErrors[keyof approvalsReadApprovalErrors];
+
+export type approvalsReadApprovalResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApprovalRequestPublic;
+};
+
+export type approvalsReadApprovalResponse = approvalsReadApprovalResponses[keyof approvalsReadApprovalResponses];
+
+export type approvalsDecideApprovalData = {
+    body: ApprovalDecision;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/approvals/{id}/decide';
+};
+
+export type approvalsDecideApprovalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type approvalsDecideApprovalError = approvalsDecideApprovalErrors[keyof approvalsDecideApprovalErrors];
+
+export type approvalsDecideApprovalResponses = {
+    /**
+     * Successful Response
+     */
+    200: ApprovalRequestPublic;
+};
+
+export type approvalsDecideApprovalResponse = approvalsDecideApprovalResponses[keyof approvalsDecideApprovalResponses];
 
 export type toolsReadBuiltinFunctionsData = {
     body?: never;
@@ -2038,7 +2230,12 @@ export type runsStreamRunEventsData = {
          */
         id: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Last Event Id
+         */
+        last_event_id?: string;
+    };
     url: '/api/v1/runs/{id}/stream';
 };
 
@@ -2078,6 +2275,10 @@ export type runsReadRunsData = {
          * Status
          */
         status?: RunStatus | null;
+        /**
+         * Conversation Id
+         */
+        conversation_id?: string | null;
     };
     url: '/api/v1/runs/';
 };

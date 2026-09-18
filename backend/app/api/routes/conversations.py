@@ -153,7 +153,9 @@ def delete_conversation(
         select(Run.id)
         .where(
             Run.conversation_id == id,
-            col(Run.status).in_([RunStatus.QUEUED, RunStatus.RUNNING]),
+            col(Run.status).in_(
+                [RunStatus.QUEUED, RunStatus.RUNNING, RunStatus.WAITING_APPROVAL]
+            ),
         )
         .limit(1)
     ).first()
@@ -220,7 +222,9 @@ async def stream_message(
             select(Run.id)
             .where(
                 Run.conversation_id == conversation_id,
-                col(Run.status).in_([RunStatus.QUEUED, RunStatus.RUNNING]),
+                col(Run.status).in_(
+                    [RunStatus.QUEUED, RunStatus.RUNNING, RunStatus.WAITING_APPROVAL]
+                ),
             )
             .limit(1)
         )

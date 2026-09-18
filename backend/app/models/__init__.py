@@ -12,6 +12,16 @@ from app.models.agent import (
     AgentVersionPublic,
     AgentVersionsPublic,
 )
+from app.models.approval import (
+    ApprovalDecision,
+    ApprovalRequest,
+    ApprovalRequestBase,
+    ApprovalRequestCreate,
+    ApprovalRequestPublic,
+    ApprovalRequestsPublic,
+    ApprovalRequestUpdate,
+    ApprovalStatus,
+)
 from app.models.base import (
     Message,
     NewPassword,
@@ -71,6 +81,14 @@ from app.models.user import (
 )
 
 __all__ = [
+    "ApprovalDecision",
+    "ApprovalRequest",
+    "ApprovalRequestBase",
+    "ApprovalRequestCreate",
+    "ApprovalRequestUpdate",
+    "ApprovalRequestPublic",
+    "ApprovalRequestsPublic",
+    "ApprovalStatus",
     "AgentToolBinding",
     "Tool",
     "ToolBase",
@@ -135,6 +153,7 @@ Agent.model_rebuild()
 AgentVersion.model_rebuild()
 User.model_rebuild()
 Run.model_rebuild()
+ApprovalRequest.model_rebuild()
 RunEvent.model_rebuild()
 Conversation.model_rebuild()
 ConvMessage.model_rebuild()

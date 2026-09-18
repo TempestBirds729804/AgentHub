@@ -9,6 +9,7 @@ from typing import Any, cast
 import anyio
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, func, select
 
@@ -22,6 +23,9 @@ from app.agent.state import AgentState
 from app.core.redis import get_redis
 from app.models import (
     AgentVersion,
+    ApprovalRequest,
+    ApprovalRequestPublic,
+    ApprovalStatus,
     Conversation,
     ConvMessage,
     MessageRole,
@@ -32,9 +36,9 @@ from app.models import (
     get_datetime_utc,
 )
 from app.services.event_bus import RedisEventPublisher, cancel_key
-from app.services.tool_service import load_tools_for_version
+from app.services.tool_service import load_approval_reasons, load_tools_for_version
 
-KNOWN_NODE_NAMES = {"call_model", "tools"}
+KNOWN_NODE_NAMES = {"call_model", "execute_tools", "approval_gate"}
 logger = logging.getLogger(__name__)
 
 
@@ -83,7 +87,9 @@ async def execute_run_with_checkpoint(
             tools = await load_tools_for_version(
                 session=session, agent_version_id=version.id
             )
-            graph = compile_agent_graph(tools, checkpointer=checkpointer)
+            approval_reasons = await load_approval_reasons(
+                session=session, agent_version_id=version.id
+            )
             # A fresh retry resets thread_id; retry_count makes its thread unique.
             thread_id = (
                 run.thread_id
@@ -92,8 +98,14 @@ async def execute_run_with_checkpoint(
             )
             config = {
                 "configurable": {"thread_id": thread_id},
-                "recursion_limit": 2 * snapshot.max_iterations + 1,
+                "recursion_limit": 3 * snapshot.max_iterations + 1,
             }
+            # Keep the approval node on resumed threads even if a tool flag was edited.
+            graph = compile_agent_graph(
+                tools,
+                checkpointer=checkpointer,
+                with_approval=bool(approval_reasons) or bool(run.checkpoint_id),
+            )
             saved = await graph.aget_state(config)
             # Always resume the latest committed checkpoint, even if kill -9
             # happened before run.checkpoint_id caught up with the saver.
@@ -115,7 +127,41 @@ async def execute_run_with_checkpoint(
             if resuming:
                 logger.info("Resuming run %s from checkpoint %s", run_id, saved.config)
             await emit(RunEventType.RUN_STARTED, {"resumed": resuming})
-            graph_input: AgentState | None = None
+            graph_input: AgentState | Command[Any] | None = None
+            if saved.interrupts:
+                requests = list(
+                    (
+                        await session.execute(
+                            select(ApprovalRequest).where(
+                                ApprovalRequest.run_id == run_id,
+                                ApprovalRequest.checkpoint_id
+                                == saved.config["configurable"]["checkpoint_id"],
+                                ApprovalRequest.thread_id == thread_id,
+                            )
+                        )
+                    ).scalars()
+                )
+                calls_to_approve = saved.interrupts[0].value["tool_calls"]
+                if (
+                    requests
+                    and all(
+                        r.status in (ApprovalStatus.APPROVED, ApprovalStatus.REJECTED)
+                        for r in requests
+                    )
+                    and {r.tool_call_id for r in requests}
+                    == {c["id"] for c in calls_to_approve}
+                ):
+                    graph_input = Command(
+                        resume={
+                            r.tool_call_id: {
+                                "approved": r.status == ApprovalStatus.APPROVED,
+                                "reason": r.rejection_reason,
+                            }
+                            for r in requests
+                        }
+                    )
+                elif any(r.status == ApprovalStatus.EXPIRED for r in requests):
+                    raise AgentError("Approval expired; retry with a fresh run")
             if not resuming:
                 messages: list[BaseMessage] = [
                     HumanMessage(content=run.input["message"])
@@ -172,6 +218,7 @@ async def execute_run_with_checkpoint(
                     "iteration": 0,
                     "prompt_tokens": 0,
                     "completion_tokens": 0,
+                    "approval_required_tools": list(approval_reasons),
                 }
             max_index = (
                 await session.execute(
@@ -271,6 +318,61 @@ async def execute_run_with_checkpoint(
                 raise RunCancelledError()
             if run.status != RunStatus.RUNNING:
                 return run
+            paused = await graph.aget_state(config)
+            if paused.interrupts:
+                checkpoint_id = paused.config["configurable"]["checkpoint_id"]
+                pending_calls = paused.interrupts[0].value["tool_calls"]
+                requests = list(
+                    (
+                        await session.execute(
+                            select(ApprovalRequest).where(
+                                ApprovalRequest.run_id == run_id,
+                                ApprovalRequest.checkpoint_id == checkpoint_id,
+                            )
+                        )
+                    ).scalars()
+                )
+                known = {r.tool_call_id for r in requests}
+                for call in pending_calls:
+                    if call["id"] not in known:
+                        request = ApprovalRequest(
+                            run_id=run_id,
+                            owner_id=run.owner_id,
+                            tool_name=call["name"],
+                            tool_call_id=call["id"],
+                            tool_args=call["args"],
+                            reason=approval_reasons.get(
+                                call["name"], "This tool requires approval."
+                            ),
+                            checkpoint_id=checkpoint_id,
+                            thread_id=thread_id,
+                        )
+                        session.add(request)
+                        requests.append(request)
+                run.sqlmodel_update(
+                    {
+                        "status": RunStatus.WAITING_APPROVAL,
+                        "prompt_tokens": final_state["prompt_tokens"],
+                        "completion_tokens": final_state["completion_tokens"],
+                        "duration_ms": (run.duration_ms or 0)
+                        + max(1, int((time.perf_counter() - started) * 1000)),
+                    }
+                )
+                session.add(run)
+                await emit(
+                    RunEventType.APPROVAL_REQUESTED,
+                    {
+                        "tool_calls": pending_calls,
+                        "approvals": [
+                            ApprovalRequestPublic.model_validate(r).model_dump(
+                                mode="json"
+                            )
+                            for r in requests
+                        ],
+                    },
+                )
+                await session.refresh(run)
+                return run
             reply = final_state["messages"][-1]
             run.sqlmodel_update(
                 {
@@ -284,7 +386,8 @@ async def execute_run_with_checkpoint(
                         completion_tokens=final_state["completion_tokens"],
                     ),
                     "finished_at": get_datetime_utc(),
-                    "duration_ms": max(1, int((time.perf_counter() - started) * 1000)),
+                    "duration_ms": (run.duration_ms or 0)
+                    + max(1, int((time.perf_counter() - started) * 1000)),
                 }
             )
             if run.conversation_id is not None:
@@ -420,6 +523,19 @@ async def _fail_run(
     # Rollback expires attributes even with expire_on_commit=False.
     await session.refresh(run)
     await recorder.resync_seq()
+    requests = (
+        await session.execute(
+            select(ApprovalRequest).where(
+                ApprovalRequest.run_id == run.id,
+                ApprovalRequest.status == ApprovalStatus.PENDING,
+            )
+        )
+    ).scalars()
+    for request in requests:
+        request.sqlmodel_update(
+            {"status": ApprovalStatus.EXPIRED, "resolved_at": get_datetime_utc()}
+        )
+        session.add(request)
     run.sqlmodel_update(
         {
             "status": RunStatus.FAILED,
@@ -446,6 +562,16 @@ async def execute_run(
     This blocking path records terminal lifecycle events. The streaming path
     additionally records node and tool events and emits model chunks.
     """
+    if await load_approval_reasons(
+        session=session, agent_version_id=run.agent_version_id
+    ):
+        publisher = RedisEventPublisher(redis=get_redis(), run_id=run.id)
+        try:
+            return await execute_run_with_checkpoint(
+                session=session, run=run, publisher=publisher
+            )
+        finally:
+            await publisher.close()
     recorder = RunEventRecorder(session=session, run_id=run.id)
     started = time.perf_counter()
     try:
@@ -564,6 +690,13 @@ async def stream_run(
     context_messages: list[BaseMessage],
 ) -> AsyncGenerator[tuple[RunEventType, dict[str, Any]]]:
     """Stream graph events and atomically persist the reply and successful run."""
+    if await load_approval_reasons(
+        session=session, agent_version_id=run.agent_version_id
+    ):
+        async with aclosing(_stream_checkpoint_run(session=session, run=run)) as stream:
+            async for item in stream:
+                yield item
+        return
     recorder = RunEventRecorder(session=session, run_id=run.id)
     started = time.perf_counter()
     run_id = run.id
@@ -626,7 +759,9 @@ async def stream_run(
                         "index": index,
                     }
                     await recorder.record(
-                        RunEventType.TOOL_CALLED, node_name="tools", payload=payload
+                        RunEventType.TOOL_CALLED,
+                        node_name="execute_tools",
+                        payload=payload,
                     )
                     await session.commit()
                     yield RunEventType.TOOL_CALLED, payload
@@ -657,7 +792,9 @@ async def stream_run(
                         "duration_ms": int((time.perf_counter() - tool_started) * 1000),
                     }
                     await recorder.record(
-                        RunEventType.TOOL_RESULT, node_name="tools", payload=payload
+                        RunEventType.TOOL_RESULT,
+                        node_name="execute_tools",
+                        payload=payload,
                     )
                     await session.commit()
                     yield RunEventType.TOOL_RESULT, payload
@@ -740,3 +877,51 @@ async def stream_run(
         yield RunEventType.RUN_FAILED, {"run_id": str(run_id), "error": run.error}
     finally:
         await _cancel_run(session=session, run=run)
+
+
+async def resume_run_after_approval(
+    *, session: AsyncSession, run: Run, publisher: RedisEventPublisher
+) -> Run:
+    """Reload durable decisions and resume through the shared checkpoint executor."""
+    return await execute_run_with_checkpoint(
+        session=session, run=run, publisher=publisher
+    )
+
+
+async def _stream_checkpoint_run(
+    *, session: AsyncSession, run: Run
+) -> AsyncGenerator[tuple[RunEventType, dict[str, Any]]]:
+    queue: asyncio.Queue[tuple[RunEventType, dict[str, Any]] | None] = asyncio.Queue()
+
+    class StreamPublisher(RedisEventPublisher):
+        async def publish(
+            self, event_type: RunEventType, payload: dict[str, Any]
+        ) -> None:
+            await super().publish(event_type, payload)
+            await queue.put((event_type, payload))
+
+    publisher = StreamPublisher(redis=get_redis(), run_id=run.id)
+
+    async def execute() -> None:
+        try:
+            await execute_run_with_checkpoint(
+                session=session, run=run, publisher=publisher
+            )
+        finally:
+            await queue.put(None)
+
+    task = asyncio.create_task(execute())
+    try:
+        while (item := await queue.get()) is not None:
+            yield item
+        await task
+    finally:
+        with anyio.CancelScope(shield=True):
+            if not task.done():
+                task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            await _cancel_run(session=session, run=run)
+            await publisher.close()

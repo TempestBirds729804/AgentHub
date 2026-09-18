@@ -19,6 +19,7 @@ from app.models import (
     Agent,
     AgentToolBinding,
     AgentVersion,
+    ApprovalRequest,
     Conversation,
     ConvMessage,
     Run,
@@ -53,6 +54,7 @@ def db() -> Generator[Session]:
         init_db(session)
         yield session
         for model in (
+            ApprovalRequest,
             RunEvent,
             Run,
             ConvMessage,

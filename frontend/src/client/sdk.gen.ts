@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, conversationsCreateConversationData, conversationsCreateConversationErrors, conversationsCreateConversationResponses, conversationsDeleteConversationData, conversationsDeleteConversationErrors, conversationsDeleteConversationResponses, conversationsReadConversationData, conversationsReadConversationErrors, conversationsReadConversationResponses, conversationsReadConversationsData, conversationsReadConversationsErrors, conversationsReadConversationsResponses, conversationsReadMessagesData, conversationsReadMessagesErrors, conversationsReadMessagesResponses, conversationsStreamMessageData, conversationsStreamMessageErrors, conversationsStreamMessageResponses, conversationsUpdateConversationData, conversationsUpdateConversationErrors, conversationsUpdateConversationResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCancelRunData, runsCancelRunErrors, runsCancelRunResponses, runsCreateAsyncRunData, runsCreateAsyncRunErrors, runsCreateAsyncRunResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, runsRetryRunData, runsRetryRunErrors, runsRetryRunResponses, runsStreamRunEventsData, runsStreamRunEventsErrors, runsStreamRunEventsResponses, toolsCreateToolData, toolsCreateToolErrors, toolsCreateToolResponses, toolsDeleteToolData, toolsDeleteToolErrors, toolsDeleteToolResponses, toolsReadBuiltinFunctionsData, toolsReadBuiltinFunctionsResponses, toolsReadToolData, toolsReadToolErrors, toolsReadToolResponses, toolsReadToolsData, toolsReadToolsErrors, toolsReadToolsResponses, toolsTestToolData, toolsTestToolErrors, toolsTestToolResponses, toolsUpdateToolData, toolsUpdateToolErrors, toolsUpdateToolResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, approvalsDecideApprovalData, approvalsDecideApprovalErrors, approvalsDecideApprovalResponses, approvalsReadApprovalData, approvalsReadApprovalErrors, approvalsReadApprovalResponses, approvalsReadApprovalsData, approvalsReadApprovalsErrors, approvalsReadApprovalsResponses, conversationsCreateConversationData, conversationsCreateConversationErrors, conversationsCreateConversationResponses, conversationsDeleteConversationData, conversationsDeleteConversationErrors, conversationsDeleteConversationResponses, conversationsReadConversationData, conversationsReadConversationErrors, conversationsReadConversationResponses, conversationsReadConversationsData, conversationsReadConversationsErrors, conversationsReadConversationsResponses, conversationsReadMessagesData, conversationsReadMessagesErrors, conversationsReadMessagesResponses, conversationsStreamMessageData, conversationsStreamMessageErrors, conversationsStreamMessageResponses, conversationsUpdateConversationData, conversationsUpdateConversationErrors, conversationsUpdateConversationResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCancelRunData, runsCancelRunErrors, runsCancelRunResponses, runsCreateAsyncRunData, runsCreateAsyncRunErrors, runsCreateAsyncRunResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, runsRetryRunData, runsRetryRunErrors, runsRetryRunResponses, runsStreamRunEventsData, runsStreamRunEventsErrors, runsStreamRunEventsResponses, toolsCreateToolData, toolsCreateToolErrors, toolsCreateToolResponses, toolsDeleteToolData, toolsDeleteToolErrors, toolsDeleteToolResponses, toolsReadBuiltinFunctionsData, toolsReadBuiltinFunctionsResponses, toolsReadToolData, toolsReadToolErrors, toolsReadToolResponses, toolsReadToolsData, toolsReadToolsErrors, toolsReadToolsResponses, toolsTestToolData, toolsTestToolErrors, toolsTestToolResponses, toolsUpdateToolData, toolsUpdateToolErrors, toolsUpdateToolResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,54 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: Record<string, unknown>;
 };
+
+export class ApprovalsService {
+    /**
+     * Read Approvals
+     *
+     * Retrieve approval requests with agent names, filtered by status and run.
+     */
+    public static readApprovals<ThrowOnError extends boolean = true>(options?: Options<approvalsReadApprovalsData, ThrowOnError>) {
+        return (options?.client ?? client).get<approvalsReadApprovalsResponses, approvalsReadApprovalsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/approvals/',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Approval
+     *
+     * Retrieve an accessible approval request.
+     */
+    public static readApproval<ThrowOnError extends boolean = true>(options: Options<approvalsReadApprovalData, ThrowOnError>) {
+        return (options.client ?? client).get<approvalsReadApprovalResponses, approvalsReadApprovalErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/approvals/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Decide Approval
+     *
+     * Approve or reject a pending tool call and enqueue fully decided runs.
+     */
+    public static decideApproval<ThrowOnError extends boolean = true>(options: Options<approvalsDecideApprovalData, ThrowOnError>) {
+        return (options.client ?? client).post<approvalsDecideApprovalResponses, approvalsDecideApprovalErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/approvals/{id}/decide',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
 
 export class ToolsService {
     /**

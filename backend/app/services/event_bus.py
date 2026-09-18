@@ -39,7 +39,8 @@ class RedisEventPublisher:
             )
             # Also expire during execution: kill -9 cannot call close().
             pipe.expire(self._key, EVENT_STREAM_TTL_SECONDS)
-            await pipe.execute()
+            result = await pipe.execute()
+            payload["event_id"] = result[0]
 
     async def close(self) -> None:
         await self._redis.expire(self._key, EVENT_STREAM_TTL_SECONDS)
@@ -51,7 +52,14 @@ async def terminal_run_payload(run_id: uuid.UUID) -> dict[str, Any] | None:
         if run is None:
             return {"run_id": str(run_id), "status": "deleted"}
         if run.status in TERMINAL_STATUSES:
-            return {"run_id": str(run_id), "status": run.status, "error": run.error}
+            return {
+                "run_id": str(run_id),
+                "status": run.status,
+                "error": run.error,
+                "output": run.output,
+            }
+        if run.status == RunStatus.WAITING_APPROVAL:
+            return {"run_id": str(run_id), "status": run.status}
     return None
 
 
@@ -66,13 +74,19 @@ async def subscribe_run_events(
         if not entries:
             terminal = await terminal_run_payload(run_id)
             if terminal is not None:
-                yield "run_finished", terminal
+                yield (
+                    "approval_requested"
+                    if terminal.get("status") == RunStatus.WAITING_APPROVAL
+                    else "run_finished",
+                    terminal,
+                )
                 return
             continue
         for _key, messages in entries:
             for message_id, fields in messages:
                 last_id = message_id
                 payload = json.loads(fields["payload"])
+                payload["event_id"] = message_id
                 yield fields["type"], payload
                 if fields["type"] in TERMINAL_EVENT_TYPES:
                     return

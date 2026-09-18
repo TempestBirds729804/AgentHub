@@ -12,7 +12,11 @@ from app.core.redis import get_redis
 from app.models import Run, RunEventType, RunStatus, get_datetime_utc
 from app.services.event_bus import TERMINAL_STATUSES, RedisEventPublisher
 from app.services.rate_limit import release_run_slot, try_acquire_run_slot
-from app.services.run_service import RunEventRecorder, execute_run_with_checkpoint
+from app.services.run_service import (
+    RunEventRecorder,
+    execute_run_with_checkpoint,
+    resume_run_after_approval,
+)
 from app.worker.settings import STALE_RUN_THRESHOLD_SECONDS
 
 logger = logging.getLogger(__name__)
@@ -27,12 +31,26 @@ def run_job_id(run: Run) -> str:
     return f"agenthub:run:{run.id}:attempt:{run.retry_count}"
 
 
+def resume_job_id(run: Run) -> str:
+    return f"{run_job_id(run)}:approval:{run.checkpoint_id}"
+
+
+async def resume_run_task(ctx: dict[str, Any], run_id: str) -> dict[str, Any]:
+    """Resume approved/rejected calls in the worker with the same execution lock."""
+    return await execute_run_task({**ctx, "approval_resume": True}, run_id)
+
+
 async def execute_run_task(ctx: dict[str, Any], run_id: str) -> dict[str, Any]:
     """Reload a Run and its tools; only the ID crosses the queue boundary."""
     run_uuid = uuid.UUID(run_id)
     # Dedicated transaction: commits in the execution Session cannot release this
     # lock. PostgreSQL releases it if the worker process/connection dies.
     async with async_engine.begin() as connection:
+        if ctx.get("approval_resume"):
+            await connection.execute(
+                text("SELECT pg_advisory_xact_lock(:key)"),
+                {"key": run_lock_key(run_uuid)},
+            )
         locked = await connection.scalar(
             text("SELECT pg_try_advisory_xact_lock(:key)"),
             {"key": run_lock_key(run_uuid)},
@@ -43,7 +61,16 @@ async def execute_run_task(ctx: dict[str, Any], run_id: str) -> dict[str, Any]:
             run = await session.get(Run, run_uuid)
             if run is None:
                 return {"status": "not_found"}
-            if ctx.get("job_id", run_job_id(run)) != run_job_id(run):
+            expected_job_id = run_job_id(run)
+            job_id = ctx.get("job_id")
+            # A resumed job may be redelivered after its checkpoint advanced.
+            # The retry attempt is stable; the current checkpoint is not.
+            obsolete = job_id is not None and (
+                not str(job_id).startswith(f"{expected_job_id}:approval:")
+                if ctx.get("approval_resume")
+                else job_id != expected_job_id
+            )
+            if obsolete:
                 return {"status": "obsolete"}
             if run.status not in (RunStatus.QUEUED, RunStatus.RUNNING):
                 return {"status": str(run.status)}
@@ -55,9 +82,12 @@ async def execute_run_task(ctx: dict[str, Any], run_id: str) -> dict[str, Any]:
                     redis=redis, user_id=owner_id, run_id=run_uuid
                 ):
                     raise RuntimeError("Concurrent run limit reached during recovery")
-                await execute_run_with_checkpoint(
-                    session=session, run=run, publisher=publisher
+                execute = (
+                    resume_run_after_approval
+                    if ctx.get("approval_resume")
+                    else execute_run_with_checkpoint
                 )
+                await execute(session=session, run=run, publisher=publisher)
             except asyncio.CancelledError:
                 # arq redelivers on shutdown; keep RUNNING with checkpoint intact.
                 # Reaper handles a second interruption or a hard process kill.

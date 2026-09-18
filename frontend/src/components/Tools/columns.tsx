@@ -34,7 +34,7 @@ export function ApprovalMark() {
         </span>
       </TooltipTrigger>
       <TooltipContent>
-        Approval will be enabled in a later phase.
+        The agent pauses for your approval before each call.
       </TooltipContent>
     </Tooltip>
   )

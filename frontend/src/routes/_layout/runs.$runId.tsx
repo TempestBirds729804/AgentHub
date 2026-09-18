@@ -4,7 +4,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { type RunEventPublic, RunsService } from "@/client"
@@ -41,7 +41,8 @@ function RunDetail() {
       (await RunsService.readRun({ path: { id: runId } })).data,
     refetchInterval: (query) =>
       query.state.data?.status === "queued" ||
-      query.state.data?.status === "running"
+      query.state.data?.status === "running" ||
+      query.state.data?.status === "waiting_approval"
         ? 3000
         : false,
   })
@@ -154,7 +155,19 @@ function RunDetail() {
           <CardTitle>Overview</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {active && asyncRun && (
+          {run.status === "waiting_approval" && (
+            <Alert className="border-amber-500">
+              <ShieldAlert />
+              <AlertTitle>Waiting for approval</AlertTitle>
+              <AlertDescription>
+                Review the pending tool calls to continue.
+                <Button variant="link" asChild>
+                  <Link to="/approvals">Review approvals</Link>
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          {(active || run.status === "waiting_approval") && asyncRun && (
             <div className="space-y-2">
               <LoadingButton
                 loading={action.isPending}
@@ -295,6 +308,15 @@ function RunDetail() {
                       #{event.seq}
                     </span>
                     <span className="font-medium">{event.event_type}</span>
+                    {event.event_type === "approval_requested" && (
+                      <ShieldAlert className="size-4 text-amber-600" />
+                    )}
+                    {event.event_type === "approval_resolved" &&
+                      (event.payload.approved ? (
+                        <ShieldCheck className="size-4 text-green-600" />
+                      ) : (
+                        <ShieldX className="size-4 text-red-600" />
+                      ))}
                     {event.node_name && <span>{event.node_name}</span>}
                     <span className="ml-auto font-mono text-xs text-muted-foreground">
                       {active && liveEvents.length

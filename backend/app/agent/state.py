@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Any, TypedDict
+from typing import Annotated, Any, NotRequired, TypedDict
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -18,3 +18,4 @@ class AgentState(TypedDict):
     iteration: int
     prompt_tokens: int
     completion_tokens: int
+    approval_required_tools: NotRequired[list[str]]

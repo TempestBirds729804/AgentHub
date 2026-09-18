@@ -19,6 +19,8 @@ from app.core.redis import get_redis
 from app.models import (
     Agent,
     AgentVersion,
+    ApprovalRequest,
+    ApprovalStatus,
     Conversation,
     Run,
     RunCreate,
@@ -89,7 +91,9 @@ async def _validate_async_conversation(
             .where(
                 Run.conversation_id == conversation_id,
                 Run.id != run_id,
-                col(Run.status).in_([RunStatus.QUEUED, RunStatus.RUNNING]),
+                col(Run.status).in_(
+                    [RunStatus.QUEUED, RunStatus.RUNNING, RunStatus.WAITING_APPROVAL]
+                ),
             )
             .limit(1)
         )
@@ -193,15 +197,33 @@ async def cancel_run(
     run = await _get_async_owned_run(
         session=session, current_user=current_user, run_id=id, lock=True
     )
-    if run.status not in (RunStatus.QUEUED, RunStatus.RUNNING):
+    if run.status not in (
+        RunStatus.QUEUED,
+        RunStatus.RUNNING,
+        RunStatus.WAITING_APPROVAL,
+    ):
         raise HTTPException(
-            status_code=400, detail="Only queued or running runs can be cancelled"
+            status_code=400,
+            detail="Only queued, running or waiting approval runs can be cancelled",
         )
     if not run.thread_id or not run.thread_id.startswith(f"run-{id}-"):
         raise HTTPException(
             status_code=400, detail="Only async runs can be cancelled here"
         )
-    queued = run.status == RunStatus.QUEUED
+    queued = run.status in (RunStatus.QUEUED, RunStatus.WAITING_APPROVAL)
+    requests = (
+        await session.execute(
+            select(ApprovalRequest).where(
+                ApprovalRequest.run_id == id,
+                ApprovalRequest.status == ApprovalStatus.PENDING,
+            )
+        )
+    ).scalars()
+    for request in requests:
+        request.sqlmodel_update(
+            {"status": ApprovalStatus.EXPIRED, "resolved_at": get_datetime_utc()}
+        )
+        session.add(request)
     # DB status is authoritative even if Redis is unavailable during cancellation.
     try:
         await get_redis().set(cancel_key(id), "1", ex=3600)
@@ -302,13 +324,19 @@ async def stream_run_events(
     session: AsyncSessionDep,
     current_user: CurrentUser,
     id: uuid.UUID,
+    last_event_id: Annotated[str, Query(pattern=r"^\d+(?:-\d+)?$")] = "0",
 ) -> Any:
     """Replay buffered async Run events and stream new progress with authenticated fetch SSE."""
     run = await _get_async_owned_run(
         session=session, current_user=current_user, run_id=id
     )
     terminal = (
-        {"run_id": str(id), "status": run.status, "error": run.error}
+        {
+            "run_id": str(id),
+            "status": run.status,
+            "error": run.error,
+            "output": run.output,
+        }
         if run.status in TERMINAL_STATUSES
         else None
     )
@@ -326,9 +354,11 @@ async def stream_run_events(
             yield f"event: run_finished\ndata: {json.dumps(terminal)}\n\n"
             return
         async for event_type, payload in subscribe_run_events(
-            redis=get_redis(), run_id=id
+            redis=get_redis(), run_id=id, last_id=last_event_id
         ):
-            yield f"event: {event_type}\ndata: {json.dumps(payload, default=str)}\n\n"
+            event_id = payload.get("event_id")
+            prefix = f"id: {event_id}\n" if event_id else ""
+            yield f"{prefix}event: {event_type}\ndata: {json.dumps(payload, default=str)}\n\n"
 
     return StreamingResponse(
         events(),
@@ -406,6 +436,13 @@ async def create_run(
     }
     run = Run.model_validate(run_in, update={"owner_id": current_user.id})
     session.add(run)
+    await _validate_async_conversation(
+        session=session,
+        current_user=current_user,
+        conversation_id=run.conversation_id,
+        agent_id=agent.id,
+        run_id=run.id,
+    )
     await session.commit()
     await session.refresh(run)
     try:
@@ -430,6 +467,7 @@ def read_runs(
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     agent_version_id: uuid.UUID | None = None,
     status: RunStatus | None = None,
+    conversation_id: uuid.UUID | None = None,
 ) -> Any:
     """Retrieve runs filtered by agent version and status."""
     filters = []
@@ -439,6 +477,8 @@ def read_runs(
         filters.append(Run.agent_version_id == agent_version_id)
     if status is not None:
         filters.append(Run.status == status)
+    if conversation_id is not None:
+        filters.append(Run.conversation_id == conversation_id)
     count = session.exec(select(func.count()).select_from(Run).where(*filters)).one()
     rows = session.exec(
         select(Run, Agent.name, AgentVersion.version_number)
