@@ -9,6 +9,10 @@ export type ClientOptions = {
  */
 export type AgentCreate = {
     /**
+     * Knowledge Base Ids
+     */
+    knowledge_base_ids?: Array<string>;
+    /**
      * Tool Ids
      */
     tool_ids?: Array<string>;
@@ -52,6 +56,10 @@ export type AgentCreate = {
  * AgentPublic
  */
 export type AgentPublic = {
+    /**
+     * Knowledge Base Ids
+     */
+    knowledge_base_ids?: Array<string>;
     /**
      * Tool Ids
      */
@@ -116,6 +124,10 @@ export type AgentPublic = {
  * AgentUpdate
  */
 export type AgentUpdate = {
+    /**
+     * Knowledge Base Ids
+     */
+    knowledge_base_ids?: Array<string> | null;
     /**
      * Tool Ids
      */
@@ -327,6 +339,16 @@ export type ApprovalRequestsPublic = {
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
 
 /**
+ * Body_knowledge-upload_document
+ */
+export type Body_knowledge_upload_document = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
  * Body_login-login_access_token
  */
 export type Body_login_login_access_token = {
@@ -530,6 +552,68 @@ export type ConversationsPublic = {
 };
 
 /**
+ * DocumentPublic
+ */
+export type DocumentPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Knowledge Base Id
+     */
+    knowledge_base_id: string;
+    /**
+     * Filename
+     */
+    filename: string;
+    /**
+     * Mime Type
+     */
+    mime_type: string;
+    /**
+     * Size Bytes
+     */
+    size_bytes: number;
+    status: DocumentStatus;
+    /**
+     * Error
+     */
+    error: string | null;
+    /**
+     * Chunk Count
+     */
+    chunk_count: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Processed At
+     */
+    processed_at: string | null;
+};
+
+/**
+ * DocumentStatus
+ */
+export type DocumentStatus = 'pending' | 'processing' | 'ready' | 'failed';
+
+/**
+ * DocumentsPublic
+ */
+export type DocumentsPublic = {
+    /**
+     * Data
+     */
+    data: Array<DocumentPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * HTTPValidationError
  */
 export type HTTPValidationError = {
@@ -537,6 +621,106 @@ export type HTTPValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
+};
+
+/**
+ * KnowledgeBaseCreate
+ */
+export type KnowledgeBaseCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Chunk Size
+     */
+    chunk_size?: number;
+    /**
+     * Chunk Overlap
+     */
+    chunk_overlap?: number;
+};
+
+/**
+ * KnowledgeBasePublic
+ */
+export type KnowledgeBasePublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Chunk Size
+     */
+    chunk_size?: number;
+    /**
+     * Chunk Overlap
+     */
+    chunk_overlap?: number;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Embedding Model
+     */
+    embedding_model: string;
+    /**
+     * Embedding Dim
+     */
+    embedding_dim: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Document Count
+     */
+    document_count?: number;
+    /**
+     * Ready Document Count
+     */
+    ready_document_count?: number;
+};
+
+/**
+ * KnowledgeBaseUpdate
+ */
+export type KnowledgeBaseUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+};
+
+/**
+ * KnowledgeBasesPublic
+ */
+export type KnowledgeBasesPublic = {
+    /**
+     * Data
+     */
+    data: Array<KnowledgeBasePublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -769,6 +953,64 @@ export type RunsPublic = {
      * Data
      */
     data: Array<RunPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * SearchRequest
+ */
+export type SearchRequest = {
+    /**
+     * Query
+     */
+    query: string;
+    /**
+     * Top K
+     */
+    top_k?: number;
+};
+
+/**
+ * SearchResultPublic
+ */
+export type SearchResultPublic = {
+    /**
+     * Chunk Id
+     */
+    chunk_id: string;
+    /**
+     * Document Id
+     */
+    document_id: string;
+    /**
+     * Filename
+     */
+    filename: string;
+    /**
+     * Seq
+     */
+    seq: number;
+    /**
+     * Content
+     */
+    content: string;
+    /**
+     * Score
+     */
+    score: number;
+};
+
+/**
+ * SearchResultsPublic
+ */
+export type SearchResultsPublic = {
+    /**
+     * Data
+     */
+    data: Array<SearchResultPublic>;
     /**
      * Count
      */
@@ -1153,6 +1395,322 @@ export type ValidationError = {
         [key: string]: unknown;
     };
 };
+
+export type knowledgeReadKnowledgeBasesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/knowledge/';
+};
+
+export type knowledgeReadKnowledgeBasesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeReadKnowledgeBasesError = knowledgeReadKnowledgeBasesErrors[keyof knowledgeReadKnowledgeBasesErrors];
+
+export type knowledgeReadKnowledgeBasesResponses = {
+    /**
+     * Successful Response
+     */
+    200: KnowledgeBasesPublic;
+};
+
+export type knowledgeReadKnowledgeBasesResponse = knowledgeReadKnowledgeBasesResponses[keyof knowledgeReadKnowledgeBasesResponses];
+
+export type knowledgeCreateKnowledgeData = {
+    body: KnowledgeBaseCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/knowledge/';
+};
+
+export type knowledgeCreateKnowledgeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeCreateKnowledgeError = knowledgeCreateKnowledgeErrors[keyof knowledgeCreateKnowledgeErrors];
+
+export type knowledgeCreateKnowledgeResponses = {
+    /**
+     * Successful Response
+     */
+    200: KnowledgeBasePublic;
+};
+
+export type knowledgeCreateKnowledgeResponse = knowledgeCreateKnowledgeResponses[keyof knowledgeCreateKnowledgeResponses];
+
+export type knowledgeDeleteKnowledgeData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/knowledge/{id}';
+};
+
+export type knowledgeDeleteKnowledgeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeDeleteKnowledgeError = knowledgeDeleteKnowledgeErrors[keyof knowledgeDeleteKnowledgeErrors];
+
+export type knowledgeDeleteKnowledgeResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type knowledgeDeleteKnowledgeResponse = knowledgeDeleteKnowledgeResponses[keyof knowledgeDeleteKnowledgeResponses];
+
+export type knowledgeReadKnowledgeData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/knowledge/{id}';
+};
+
+export type knowledgeReadKnowledgeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeReadKnowledgeError = knowledgeReadKnowledgeErrors[keyof knowledgeReadKnowledgeErrors];
+
+export type knowledgeReadKnowledgeResponses = {
+    /**
+     * Successful Response
+     */
+    200: KnowledgeBasePublic;
+};
+
+export type knowledgeReadKnowledgeResponse = knowledgeReadKnowledgeResponses[keyof knowledgeReadKnowledgeResponses];
+
+export type knowledgeUpdateKnowledgeData = {
+    body: KnowledgeBaseUpdate;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/knowledge/{id}';
+};
+
+export type knowledgeUpdateKnowledgeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeUpdateKnowledgeError = knowledgeUpdateKnowledgeErrors[keyof knowledgeUpdateKnowledgeErrors];
+
+export type knowledgeUpdateKnowledgeResponses = {
+    /**
+     * Successful Response
+     */
+    200: KnowledgeBasePublic;
+};
+
+export type knowledgeUpdateKnowledgeResponse = knowledgeUpdateKnowledgeResponses[keyof knowledgeUpdateKnowledgeResponses];
+
+export type knowledgeReadDocumentsData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/knowledge/{id}/documents';
+};
+
+export type knowledgeReadDocumentsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeReadDocumentsError = knowledgeReadDocumentsErrors[keyof knowledgeReadDocumentsErrors];
+
+export type knowledgeReadDocumentsResponses = {
+    /**
+     * Successful Response
+     */
+    200: DocumentsPublic;
+};
+
+export type knowledgeReadDocumentsResponse = knowledgeReadDocumentsResponses[keyof knowledgeReadDocumentsResponses];
+
+export type knowledgeUploadDocumentData = {
+    body: Body_knowledge_upload_document;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/knowledge/{id}/documents';
+};
+
+export type knowledgeUploadDocumentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeUploadDocumentError = knowledgeUploadDocumentErrors[keyof knowledgeUploadDocumentErrors];
+
+export type knowledgeUploadDocumentResponses = {
+    /**
+     * Successful Response
+     */
+    202: DocumentPublic;
+};
+
+export type knowledgeUploadDocumentResponse = knowledgeUploadDocumentResponses[keyof knowledgeUploadDocumentResponses];
+
+export type knowledgeDeleteDocumentData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+        /**
+         * Doc Id
+         */
+        doc_id: string;
+    };
+    query?: never;
+    url: '/api/v1/knowledge/{id}/documents/{doc_id}';
+};
+
+export type knowledgeDeleteDocumentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeDeleteDocumentError = knowledgeDeleteDocumentErrors[keyof knowledgeDeleteDocumentErrors];
+
+export type knowledgeDeleteDocumentResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type knowledgeDeleteDocumentResponse = knowledgeDeleteDocumentResponses[keyof knowledgeDeleteDocumentResponses];
+
+export type knowledgeReprocessDocumentData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+        /**
+         * Doc Id
+         */
+        doc_id: string;
+    };
+    query?: never;
+    url: '/api/v1/knowledge/{id}/documents/{doc_id}/reprocess';
+};
+
+export type knowledgeReprocessDocumentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeReprocessDocumentError = knowledgeReprocessDocumentErrors[keyof knowledgeReprocessDocumentErrors];
+
+export type knowledgeReprocessDocumentResponses = {
+    /**
+     * Successful Response
+     */
+    202: DocumentPublic;
+};
+
+export type knowledgeReprocessDocumentResponse = knowledgeReprocessDocumentResponses[keyof knowledgeReprocessDocumentResponses];
+
+export type knowledgeSearchKnowledgeData = {
+    body: SearchRequest;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/knowledge/{id}/search';
+};
+
+export type knowledgeSearchKnowledgeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type knowledgeSearchKnowledgeError = knowledgeSearchKnowledgeErrors[keyof knowledgeSearchKnowledgeErrors];
+
+export type knowledgeSearchKnowledgeResponses = {
+    /**
+     * Successful Response
+     */
+    200: SearchResultsPublic;
+};
+
+export type knowledgeSearchKnowledgeResponse = knowledgeSearchKnowledgeResponses[keyof knowledgeSearchKnowledgeResponses];
 
 export type approvalsReadApprovalsData = {
     body?: never;

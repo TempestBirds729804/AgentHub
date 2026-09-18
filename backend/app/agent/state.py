@@ -19,3 +19,5 @@ class AgentState(TypedDict):
     prompt_tokens: int
     completion_tokens: int
     approval_required_tools: NotRequired[list[str]]
+    knowledge_base_ids: NotRequired[list[str]]
+    retrieved_chunks: NotRequired[list[dict[str, Any]]]

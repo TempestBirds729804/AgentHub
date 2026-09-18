@@ -12,6 +12,9 @@ def create_agent(
 ) -> Agent:
     db_obj = Agent.model_validate(agent_in, update={"owner_id": owner_id})
     db_obj.sqlmodel_update({"tool_ids": agent_in.model_dump(mode="json")["tool_ids"]})
+    db_obj.sqlmodel_update(
+        {"knowledge_base_ids": agent_in.model_dump(mode="json")["knowledge_base_ids"]}
+    )
     session.add(db_obj)
     session.commit()
     session.refresh(db_obj)
@@ -22,6 +25,10 @@ def update_agent(*, session: Session, db_agent: Agent, agent_in: AgentUpdate) ->
     agent_data = agent_in.model_dump(exclude_unset=True)
     if agent_in.tool_ids is not None:
         agent_data["tool_ids"] = agent_in.model_dump(mode="json")["tool_ids"]
+    if agent_in.knowledge_base_ids is not None:
+        agent_data["knowledge_base_ids"] = agent_in.model_dump(mode="json")[
+            "knowledge_base_ids"
+        ]
     db_agent.sqlmodel_update(agent_data, update={"updated_at": get_datetime_utc()})
     session.add(db_agent)
     session.commit()
@@ -53,6 +60,7 @@ def publish_agent_version(
         max_iterations=db_agent.max_iterations,
         timeout_seconds=db_agent.timeout_seconds,
         tool_ids=db_agent.tool_ids,
+        knowledge_base_ids=db_agent.knowledge_base_ids,
     )
     # Concurrent publishes rely on the database unique constraint for detection.
     next_number = get_latest_version_number(session=session, agent_id=db_agent.id) + 1

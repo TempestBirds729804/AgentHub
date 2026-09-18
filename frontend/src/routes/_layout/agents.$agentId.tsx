@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type AgentPublic, AgentsService } from "@/client"
+import KnowledgeSelection from "@/components/Knowledge/KnowledgeSelection"
 import RunAgent from "@/components/Runs/RunAgent"
 import ToolSelection from "@/components/Tools/ToolSelection"
 import { Badge } from "@/components/ui/badge"
@@ -57,6 +58,7 @@ export const Route = createFileRoute("/_layout/agents/$agentId")({
 
 const configurationSchema = z.object({
   tool_ids: z.array(z.string()),
+  knowledge_base_ids: z.array(z.string()),
   name: z.string().min(1, { message: "Name is required" }),
   description: z.string().optional(),
   system_prompt: z.string(),
@@ -87,6 +89,7 @@ function ConfigurationForm({ agent }: { agent: AgentPublic }) {
     mode: "onBlur",
     defaultValues: {
       tool_ids: agent.tool_ids ?? [],
+      knowledge_base_ids: agent.knowledge_base_ids ?? [],
       name: agent.name,
       description: agent.description ?? "",
       system_prompt: agent.system_prompt ?? "",
@@ -104,6 +107,7 @@ function ConfigurationForm({ agent }: { agent: AgentPublic }) {
         path: { id: agent.id },
         body: {
           tool_ids: data.tool_ids,
+          knowledge_base_ids: data.knowledge_base_ids,
           name: data.name,
           description: data.description,
           system_prompt: data.system_prompt,
@@ -247,6 +251,19 @@ function ConfigurationForm({ agent }: { agent: AgentPublic }) {
                     />
                   </FormControl>
                   <FormLabel>Active</FormLabel>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="knowledge_base_ids"
+              render={({ field }) => (
+                <FormItem>
+                  <KnowledgeSelection
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                  <FormMessage />
                 </FormItem>
               )}
             />

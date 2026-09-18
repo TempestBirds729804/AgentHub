@@ -2,6 +2,10 @@ class AgentError(Exception):
     """Base error for agent execution."""
 
 
+class EmbeddingMismatchError(AgentError):
+    """The knowledge base uses a different embedding model or dimension."""
+
+
 class ModelNotConfiguredError(AgentError):
     """The model provider is not configured."""
 

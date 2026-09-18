@@ -532,6 +532,7 @@ data: <json>\n
 | `run_started` | `{"run_id": "<uuid>"}` | 第一个事件，前端拿到 run_id 用于后续跳转 |
 | `node_started` | `{"node": "call_model"}` | 节点开始 |
 | `node_finished` | `{"node": "call_model"}` | 节点结束 |
+| `context_retrieved` | `{"chunks": [{"index": 1, "chunk_id": "<uuid>", "document_id": "<uuid>", "filename": "...", "seq": 3, "content": "...", "score": 0.82}]}` | 阶段 08：检索节点结束后发送并落库；无匹配时 chunks 为空；历史消息按 run_id 恢复引用 |
 | `model_chunk` | `{"text": "部分"}` | 回复分片，前端追加到当前气泡 |
 | `tool_called` | `{"tool": "calculator", "args": {"expression": "2*21"}, "index": 0}` | 工具开始；index 是本次 Run 内的调用序号，落库 |
 | `tool_result` | `{"tool": "calculator", "index": 0, "result": "42", "ok": true, "error": null, "duration_ms": 12}` | 按 index 配对，可乱序完成；结果截断至 2000 字符，落库 |

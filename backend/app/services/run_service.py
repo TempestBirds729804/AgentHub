@@ -38,7 +38,7 @@ from app.models import (
 from app.services.event_bus import RedisEventPublisher, cancel_key
 from app.services.tool_service import load_approval_reasons, load_tools_for_version
 
-KNOWN_NODE_NAMES = {"call_model", "execute_tools", "approval_gate"}
+KNOWN_NODE_NAMES = {"call_model", "execute_tools", "approval_gate", "retrieve_context"}
 logger = logging.getLogger(__name__)
 
 
@@ -98,12 +98,13 @@ async def execute_run_with_checkpoint(
             )
             config = {
                 "configurable": {"thread_id": thread_id},
-                "recursion_limit": 3 * snapshot.max_iterations + 1,
+                "recursion_limit": 3 * snapshot.max_iterations + 2,
             }
             # Keep the approval node on resumed threads even if a tool flag was edited.
             graph = compile_agent_graph(
                 tools,
                 checkpointer=checkpointer,
+                with_retrieval=bool(snapshot.knowledge_base_ids),
                 with_approval=bool(approval_reasons) or bool(run.checkpoint_id),
             )
             saved = await graph.aget_state(config)
@@ -215,6 +216,9 @@ async def execute_run_with_checkpoint(
                     "llm_model": snapshot.llm_model,
                     "llm_settings": snapshot.llm_settings,
                     "max_iterations": snapshot.max_iterations,
+                    "knowledge_base_ids": [
+                        str(value) for value in snapshot.knowledge_base_ids
+                    ],
                     "iteration": 0,
                     "prompt_tokens": 0,
                     "completion_tokens": 0,
@@ -261,6 +265,15 @@ async def execute_run_with_checkpoint(
                                 else RunEventType.NODE_FINISHED,
                                 {"node": name},
                             )
+                            if name == "retrieve_context" and kind == "on_chain_end":
+                                await emit(
+                                    RunEventType.CONTEXT_RETRIEVED,
+                                    {
+                                        "chunks": event["data"]["output"].get(
+                                            "retrieved_chunks", []
+                                        )
+                                    },
+                                )
                         elif kind == "on_chat_model_stream":
                             chunk = _as_text(event["data"]["chunk"].content)
                             if chunk:
@@ -589,6 +602,7 @@ async def execute_run(
             "llm_model": snapshot.llm_model,
             "llm_settings": snapshot.llm_settings,
             "max_iterations": snapshot.max_iterations,
+            "knowledge_base_ids": [str(value) for value in snapshot.knowledge_base_ids],
             "iteration": 0,
             "prompt_tokens": 0,
             "completion_tokens": 0,
@@ -597,12 +611,19 @@ async def execute_run(
             session=session, agent_version_id=run.agent_version_id
         )
         final_state = await asyncio.wait_for(
-            compile_agent_graph(tools).ainvoke(
+            compile_agent_graph(
+                tools, with_retrieval=bool(snapshot.knowledge_base_ids)
+            ).ainvoke(
                 initial_state,
-                config={"recursion_limit": 2 * snapshot.max_iterations + 1},
+                config={"recursion_limit": 2 * snapshot.max_iterations + 2},
             ),
             timeout=snapshot.timeout_seconds,
         )
+        if snapshot.knowledge_base_ids:
+            await recorder.record(
+                RunEventType.CONTEXT_RETRIEVED,
+                payload={"chunks": final_state.get("retrieved_chunks", [])},
+            )
         run.sqlmodel_update(
             {
                 "status": RunStatus.SUCCEEDED,
@@ -717,6 +738,7 @@ async def stream_run(
             "llm_model": snapshot.llm_model,
             "llm_settings": snapshot.llm_settings,
             "max_iterations": snapshot.max_iterations,
+            "knowledge_base_ids": [str(value) for value in snapshot.knowledge_base_ids],
             "iteration": 0,
             "prompt_tokens": 0,
             "completion_tokens": 0,
@@ -727,10 +749,12 @@ async def stream_run(
             tools = await load_tools_for_version(
                 session=session, agent_version_id=run.agent_version_id
             )
-            async for event in compile_agent_graph(tools).astream_events(
+            async for event in compile_agent_graph(
+                tools, with_retrieval=bool(snapshot.knowledge_base_ids)
+            ).astream_events(
                 initial_state,
                 version="v2",
-                config={"recursion_limit": 2 * snapshot.max_iterations + 1},
+                config={"recursion_limit": 2 * snapshot.max_iterations + 2},
             ):
                 kind, name = event["event"], event["name"]
                 if name in KNOWN_NODE_NAMES and kind in {
@@ -746,6 +770,17 @@ async def stream_run(
                     await recorder.record(event_type, node_name=name, payload=payload)
                     await session.commit()
                     yield event_type, payload
+                    if name == "retrieve_context" and kind == "on_chain_end":
+                        payload = {
+                            "chunks": event["data"]["output"].get(
+                                "retrieved_chunks", []
+                            )
+                        }
+                        await recorder.record(
+                            RunEventType.CONTEXT_RETRIEVED, payload=payload
+                        )
+                        await session.commit()
+                        yield RunEventType.CONTEXT_RETRIEVED, payload
                 elif kind == "on_chat_model_stream":
                     text = _as_text(event["data"]["chunk"].content)
                     if text:

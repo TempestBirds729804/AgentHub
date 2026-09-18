@@ -707,6 +707,8 @@ async def _fail_run(
 
 **本阶段先只记 `run_started` / `run_finished` / `run_failed` 三种事件**，在 6.2 的主流程里写。阶段 04 会把 `ainvoke` 换成 `astream_events` 并补齐 `node_started` / `node_finished` / `model_chunk`。
 
+阶段 08 启用上述已预留的 `CONTEXT_RETRIEVED`：同步、SSE 和异步 worker 路径均保存检索片段，SSE/Redis 同时推送；事件数据契约见阶段 04 的 SSE 表。枚举已经包含该值，无需增加枚举值或迁移。
+
 在 `execute_run` 的注释里写明这一点，免得后面的人以为漏了。
 
 ---

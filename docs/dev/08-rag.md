@@ -42,7 +42,7 @@ uv add "minio" "pypdf" "langchain-text-splitters"
 - `pypdf` 解析 PDF。Word 文档需要 `python-docx`，如果只支持 PDF 和纯文本就不用装
 - `langchain-text-splitters` 提供 `RecursiveCharacterTextSplitter`，比自己写切片逻辑可靠
 
-Embedding 用 `langchain-openai` 的 `OpenAIEmbeddings`，已经在阶段 01 装了。
+Embedding 按用户于 2026-09-18 的授权使用 `qwen3-vl-embedding`，通过已有 `httpx` 调用 DashScope 原生接口，具体契约见 4.3。对话模型仍使用现有 OpenAI 兼容适配器。
 
 ### 1.2 存储客户端
 
@@ -396,35 +396,23 @@ def split_text(*, text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
 
 ### 4.3 Embedding
 
-```python
-from langchain_openai import OpenAIEmbeddings
+用户授权后的实际方案：`app/agent/ingestion.py` 中的 `DashScopeEmbeddings` 提供 `aembed_documents` / `aembed_query`。仅发送文本，不启用图片、视频或 OCR。
 
-EMBEDDING_BATCH_SIZE = 64
+独立配置 `EMBEDDING_API_KEY`、`EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/api/v1`、`EMBEDDING_MODEL=qwen3-vl-embedding` 和 `EMBEDDING_DIM=1536`。不复用对话模型的 URL 或密钥。
 
+HTTP POST 路径为 `/services/embeddings/multimodal-embedding/multimodal-embedding`，Authorization 使用 Bearer 密钥，请求体为：
 
-@lru_cache(maxsize=1)
-def get_embeddings() -> OpenAIEmbeddings:
-    return OpenAIEmbeddings(
-        model=settings.EMBEDDING_MODEL,
-        api_key=settings.LLM_API_KEY,
-        base_url=settings.LLM_BASE_URL,
-        dimensions=settings.EMBEDDING_DIM,
-    )
-
-
-async def embed_chunks(texts: list[str]) -> list[list[float]]:
-    """分批向量化。一次请求塞太多会超出 API 的输入上限。"""
-    embeddings = get_embeddings()
-    vectors: list[list[float]] = []
-    for i in range(0, len(texts), EMBEDDING_BATCH_SIZE):
-        batch = texts[i : i + EMBEDDING_BATCH_SIZE]
-        vectors.extend(await embeddings.aembed_documents(batch))
-    return vectors
+```json
+{
+  "model": "qwen3-vl-embedding",
+  "input": {"contents": [{"text": "待向量化的片段"}]},
+  "parameters": {"dimension": 1536}
+}
 ```
 
-`dimensions` 参数只有部分模型支持（`text-embedding-3-*` 系列支持，老的 `ada-002` 不支持）。如果用的模型不支持，去掉这个参数并确保 `EMBEDDING_DIM` 与模型的原生维度一致。
+每批最多 20 条。响应读取 `output.embeddings`，按 `index` 恢复输入顺序，检查数量、索引、1536 维、有限数值及非零向量。模型或维度变更必须重建知识库，不混用向量空间。
 
-分批是必需的。OpenAI 的 embedding 接口对单次请求的总 token 数有限制，一次塞几百个 chunk 会报 400。
+仅对建立连接时的 `ConnectError` / `ConnectTimeout` 最多尝试 3 次；HTTP 错误、读取超时和无效响应直接报告。连接异常保存脱敏后的异常类型及原因链，避免空错误消息。持续失败时文档落 `failed`，可通过 Reprocess 重试。
 
 ### 4.4 Worker 任务
 
@@ -1027,27 +1015,27 @@ Configuration 页签加 "Knowledge Bases" 区块，多选列表，与阶段 05 �
 
 ## 阶段验收清单
 
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`
-- [ ] 迁移文件里有 `from pgvector.sqlalchemy import Vector` 的 import
-- [ ] `docker compose exec db psql -U postgres -d app -c "\d chunk"` 里 `embedding` 是 `vector(1536)`
-- [ ] `docker compose exec db psql -U postgres -d app -c "\di chunk*"` 能看到 `chunk_embedding_hnsw_idx`
-- [ ] `uv run alembic downgrade -1 && uv run alembic upgrade head` 往返无错（索引的 drop 和 create 都对）
-- [ ] `agent` 表的 `knowledge_base_ids` 列有 `server_default '[]'`
-- [ ] `bash scripts/prestart.sh` 从干净环境跑通，MinIO bucket 被创建
-- [ ] `uv run pytest tests/ -v` 全绿（需要 MinIO 和 Redis 在跑）
-- [ ] 测试不调真实 embedding API（把 `LLM_BASE_URL` 改无效后测试仍全绿）
-- [ ] 索引生效测试通过（EXPLAIN 里出现索引名）
-- [ ] 重跑 failed 文档不产生重复 chunk 的测试通过
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] `bun run lint` 通过
-- [ ] 手动完成任务 7.6 的八步验证，特别是第 7 步的引用标记和第 8 步的"不编造"
-- [ ] 手动验证：上传一个扫描版 PDF（无文字层），文档落 failed 且错误信息提到 OCR
-- [ ] 手动验证：删除知识库后，MinIO 控制台里对应的对象也消失了
-- [ ] 手动验证：文档上传后列表状态自动从 pending 变 processing 变 ready（轮询生效）
-- [ ] 手动验证：Search 页签能调出合理的检索结果和分数
-- [ ] `SELECT status, count(*) FROM document GROUP BY status;` 没有卡在 processing 的记录
-- [ ] `SELECT count(*) FROM chunk WHERE embedding IS NULL;` 返回 0
+- [x] `uv run alembic check` 输出 `No new upgrade operations detected.`
+- [x] 迁移文件里有 `from pgvector.sqlalchemy import Vector` 的 import
+- [x] `docker compose exec db psql -U postgres -d app -c "\d chunk"` 里 `embedding` 是 `vector(1536)`
+- [x] `docker compose exec db psql -U postgres -d app -c "\di chunk*"` 能看到 `chunk_embedding_hnsw_idx`
+- [x] 迁移往返无错：在独立测试库执行 `downgrade -2` / `upgrade head`，覆盖两个阶段 08 迁移及索引 drop/create
+- [x] `agent` 表的 `knowledge_base_ids` 列有 `server_default '[]'`
+- [x] `bash scripts/prestart.sh` 从新建测试数据库跑通，MinIO bucket 被创建
+- [x] `uv run pytest tests/ -v` 全绿（需要 MinIO 和 Redis 在跑；平台跳过情况见下）
+- [x] 测试不调真实 embedding API（同时将 `LLM_BASE_URL` 和 `EMBEDDING_BASE_URL` 改为不可达地址仍通过）
+- [x] 索引生效测试通过（EXPLAIN 里出现索引名）
+- [x] 重跑 failed 文档不产生重复 chunk 的测试通过
+- [x] `cd backend && bash scripts/lint.sh` 全绿
+- [x] `cd backend && bash scripts/test.sh` 全绿
+- [x] `bun run lint` 通过
+- [x] Playwright 真实浏览器完成任务 7.6 八步验证，包括引用弹窗、刷新后的引用恢复及无资料时明确说明
+- [x] 真实浏览器上传无文字层 PDF，文档落 failed 且错误信息提到 OCR，并验证 Reprocess 与 Delete
+- [x] 删除知识库后，通过 MinIO SDK `stat_object` 确认对应对象返回 `NoSuchKey`（等效替代控制台目测）
+- [x] 上传返回 pending，worker 进入 processing，浏览器轮询自动显示 ready
+- [x] Search 页签能调出合理的检索结果和分数
+- [x] `SELECT status, count(*) FROM document GROUP BY status;` 真实验收库没有 processing 记录
+- [x] `SELECT count(*) FROM chunk WHERE embedding IS NULL;` 返回 0
 
 ---
 
@@ -1096,9 +1084,25 @@ Embedding 模型换了但知识库没重建。`assert_embedding_compatible` 就�
 
 ## 偏差记录
 
-- 实际 embedding 模型与维度：
-- score 阈值的最终取值与调整依据：
-- 支持的文件类型：
-- 是否把检索做成工具（而非固定节点）：
-- 是否实现孤儿对象清理：
-- 其它偏差：
+- 2026-09-18 用户授权使用 `qwen3-vl-embedding`，通过 DashScope 原生 HTTP 接口调用（复用 httpx，不引入第二套对话模型适配器）。文本单条、两条批量实测均 HTTP 200，返回 1536 维。独立配置 EMBEDDING_API_KEY / EMBEDDING_BASE_URL，不复用 DeepSeek 凭据；批次上限按官方文档设为 20。仅处理文本，不扩展多模态上传。
+- 配套修改范围：config.py、compose.yml（embedding 配置透传）、models/user.py（反向级联）、crud/knowledge.py、crud/agent.py、agent/snapshot.py、services/run_service.py（各执行路径及事件持久化）、worker/main.py、既有 Playground/SSE 组件及生成客户端；新增知识库组件、测试辅助及前端验收测试。均直接服务阶段 08。
+- 文档处理新增 started_at 时间戳供僵尸任务回收；内容字符串按 4000 字符切片上限定义。迁移往返和清表测试仅在独立阶段 08 测试库执行。
+
+- 实际 embedding 模型与维度：`qwen3-vl-embedding`，1536 维；单条、批量、worker 文档处理、查询均真实调用成功。
+- score 阈值的最终取值与调整依据：保留 0.35。暗号问题实测 0.87165，实验室位置 0.66454；无关披萨/太阳问题返回空。英文 PDF 中验证码检索实测 0.69356。
+- 支持的文件类型：文本层 PDF、UTF-8 TXT、Markdown；20 MB 上传限制、200 万提取字符限制。无文字层 PDF 明确提示 OCR 不支持。
+- 是否把检索做成工具：否，固定 START → retrieve_context → call_model；工具循环和审批恢复均不重复检索。Run 归属在检索时再次校验，避免历史快照绕过知识库权限。
+- 是否实现孤儿对象清理：未实现可选的对象扫描 cron。删除接口及上传回滚会清理对象；清理失败记录日志。已实现 processing 超过 30 分钟的文档回收，每 5 分钟检查一次。
+- Worker 流水线测试合并在 `tests/api/routes/test_knowledge.py`，复用 API、真实 MinIO 与 worker，覆盖成功、失败、重试幂等、对象缺失、队列失败及僵尸回收。
+- HNSW 查询启用 `hnsw.iterative_scan=strict_order`（实测 pgvector 0.8.6）。精确小样本的排序/阈值验证与 1000 条随机向量的索引计划验证分开；索引测试重建测试库索引以消除反复清表造成的历史膨胀，不强制关闭 Seq Scan，也不承诺近似索引具有 100% 召回率。
+- 原阻塞归因：早期原生接口已成功，但一次 worker 调用出现无文本的 `ConnectError`；同步/异步及代理开关矩阵随后均成功，原失败文档重处理成功。确切的网络瞬断来源未复现，不能断言为密钥、模型或代理故障。已修复连接无重试和错误信息为空两项应用缺陷，并用故障注入验证重试恢复及耗尽。
+
+### 2026-09-18 验收结果
+
+- 前置阶段 01–07（含 05_1）验收项均已勾选。阶段 08 使用独立数据库 `agenthub_phase08_test` / `agenthub_phase08_linux` / `agenthub_phase08_live`，未在业务库运行测试清表或降级迁移；本地业务库 `app` 已升级到 `e2e7bfca120f`。
+- Windows：212 passed、2 skipped（平台相关符号链接检查）、10 deselected（默认排除的 MCP 集成标记）；Linux Docker：214 passed、10 deselected。覆盖率 93%。最终 Linux 使用 Redis DB 14，Windows 使用 DB 13，真实验收使用 DB 12；并行测试共用 Redis 时曾造成事件清理干扰，隔离后完整复验通过。
+- Linux 原始 `scripts/lint.sh` / `scripts/test.sh` 均通过；mypy、ty、ruff 均通过。前端 Biome、TypeScript/Vite 构建及 `docker compose build backend` 通过；客户端由 OpenAPI 生成。
+- 浏览器：`knowledge.spec.ts`、`agents.spec.ts`、`runs.spec.ts` 及相关工具界面回归共 10 passed、1 skipped。MCP 真实服务测试因未配置服务地址跳过。额外的阶段 05 GitHub HTTP 真联网用例被代理 DNS 的非公网地址及现有 SSRF 防护阻断，最终回归排除该环境依赖用例，未降低防护规则。
+- 真实模型：TXT/文本 PDF 经 MinIO → arq → Qwen → pgvector 入库并成功检索；Playground 正确回答暗号“青竹7429”，引用可点击且刷新后恢复；询问资料外的历史人物日期时明确说明知识库未提供。无文字层 PDF 的 OCR 错误、重试、删除在浏览器验证。删除文本 PDF 知识库后原对象确认为 `NoSuchKey`。
+- 真实异步 Run `f2e132d7-9397-4e1b-a9e9-59ddafd90ba3` 成功，回答“青竹7429”并带 `[1]`，仅一条 `context_retrieved` 事件。同步、SSE、异步三条路径和审批恢复另有自动化回归覆盖。
+- 截图保存在 `frontend/test-results/phase08-complete/`；真实演示数据保留在 `agenthub_phase08_live` 供复核。验收日志为本地产物，不纳入源码。

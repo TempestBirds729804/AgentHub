@@ -18,11 +18,13 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutAgentsRouteImport } from './routes/_layout/agents'
 import { Route as LayoutApprovalsRouteImport } from './routes/_layout/approvals'
+import { Route as LayoutKnowledgeRouteImport } from './routes/_layout/knowledge'
 import { Route as LayoutPlaygroundRouteImport } from './routes/_layout/playground'
 import { Route as LayoutRunsRouteImport } from './routes/_layout/runs'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutToolsRouteImport } from './routes/_layout/tools'
 import { Route as LayoutAgentsAgentIdRouteImport } from './routes/_layout/agents.$agentId'
+import { Route as LayoutKnowledgeKbIdRouteImport } from './routes/_layout/knowledge.$kbId'
 import { Route as LayoutRunsRunIdRouteImport } from './routes/_layout/runs.$runId'
 
 const LayoutRoute = LayoutRouteImport.update({
@@ -69,6 +71,11 @@ const LayoutApprovalsRoute = LayoutApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutKnowledgeRoute = LayoutKnowledgeRouteImport.update({
+  id: '/knowledge',
+  path: '/knowledge',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutPlaygroundRoute = LayoutPlaygroundRouteImport.update({
   id: '/playground',
   path: '/playground',
@@ -94,6 +101,11 @@ const LayoutAgentsAgentIdRoute = LayoutAgentsAgentIdRouteImport.update({
   path: '/$agentId',
   getParentRoute: () => LayoutAgentsRoute,
 } as any)
+const LayoutKnowledgeKbIdRoute = LayoutKnowledgeKbIdRouteImport.update({
+  id: '/$kbId',
+  path: '/$kbId',
+  getParentRoute: () => LayoutKnowledgeRoute,
+} as any)
 const LayoutRunsRunIdRoute = LayoutRunsRunIdRouteImport.update({
   id: '/$runId',
   path: '/$runId',
@@ -109,11 +121,13 @@ export interface FileRoutesByFullPath {
   '/admin': typeof LayoutAdminRoute
   '/agents': typeof LayoutAgentsRouteWithChildren
   '/approvals': typeof LayoutApprovalsRoute
+  '/knowledge': typeof LayoutKnowledgeRouteWithChildren
   '/playground': typeof LayoutPlaygroundRoute
   '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/tools': typeof LayoutToolsRoute
   '/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/knowledge/$kbId': typeof LayoutKnowledgeKbIdRoute
   '/runs/$runId': typeof LayoutRunsRunIdRoute
 }
 export interface FileRoutesByTo {
@@ -124,12 +138,14 @@ export interface FileRoutesByTo {
   '/admin': typeof LayoutAdminRoute
   '/agents': typeof LayoutAgentsRouteWithChildren
   '/approvals': typeof LayoutApprovalsRoute
+  '/knowledge': typeof LayoutKnowledgeRouteWithChildren
   '/playground': typeof LayoutPlaygroundRoute
   '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/tools': typeof LayoutToolsRoute
   '/': typeof LayoutIndexRoute
   '/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/knowledge/$kbId': typeof LayoutKnowledgeKbIdRoute
   '/runs/$runId': typeof LayoutRunsRunIdRoute
 }
 export interface FileRoutesById {
@@ -142,12 +158,14 @@ export interface FileRoutesById {
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/agents': typeof LayoutAgentsRouteWithChildren
   '/_layout/approvals': typeof LayoutApprovalsRoute
+  '/_layout/knowledge': typeof LayoutKnowledgeRouteWithChildren
   '/_layout/playground': typeof LayoutPlaygroundRoute
   '/_layout/runs': typeof LayoutRunsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/tools': typeof LayoutToolsRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/_layout/knowledge/$kbId': typeof LayoutKnowledgeKbIdRoute
   '/_layout/runs/$runId': typeof LayoutRunsRunIdRoute
 }
 export interface FileRouteTypes {
@@ -161,11 +179,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/approvals'
+    | '/knowledge'
     | '/playground'
     | '/runs'
     | '/settings'
     | '/tools'
     | '/agents/$agentId'
+    | '/knowledge/$kbId'
     | '/runs/$runId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,12 +196,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/approvals'
+    | '/knowledge'
     | '/playground'
     | '/runs'
     | '/settings'
     | '/tools'
     | '/'
     | '/agents/$agentId'
+    | '/knowledge/$kbId'
     | '/runs/$runId'
   id:
     | '__root__'
@@ -193,12 +215,14 @@ export interface FileRouteTypes {
     | '/_layout/admin'
     | '/_layout/agents'
     | '/_layout/approvals'
+    | '/_layout/knowledge'
     | '/_layout/playground'
     | '/_layout/runs'
     | '/_layout/settings'
     | '/_layout/tools'
     | '/_layout/'
     | '/_layout/agents/$agentId'
+    | '/_layout/knowledge/$kbId'
     | '/_layout/runs/$runId'
   fileRoutesById: FileRoutesById
 }
@@ -275,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutApprovalsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/knowledge': {
+      id: '/_layout/knowledge'
+      path: '/knowledge'
+      fullPath: '/knowledge'
+      preLoaderRoute: typeof LayoutKnowledgeRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/playground': {
       id: '/_layout/playground'
       path: '/playground'
@@ -310,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAgentsAgentIdRouteImport
       parentRoute: typeof LayoutAgentsRoute
     }
+    '/_layout/knowledge/$kbId': {
+      id: '/_layout/knowledge/$kbId'
+      path: '/$kbId'
+      fullPath: '/knowledge/$kbId'
+      preLoaderRoute: typeof LayoutKnowledgeKbIdRouteImport
+      parentRoute: typeof LayoutKnowledgeRoute
+    }
     '/_layout/runs/$runId': {
       id: '/_layout/runs/$runId'
       path: '/$runId'
@@ -332,6 +370,18 @@ const LayoutAgentsRouteWithChildren = LayoutAgentsRoute._addFileChildren(
   LayoutAgentsRouteChildren,
 )
 
+interface LayoutKnowledgeRouteChildren {
+  LayoutKnowledgeKbIdRoute: typeof LayoutKnowledgeKbIdRoute
+}
+
+const LayoutKnowledgeRouteChildren: LayoutKnowledgeRouteChildren = {
+  LayoutKnowledgeKbIdRoute: LayoutKnowledgeKbIdRoute,
+}
+
+const LayoutKnowledgeRouteWithChildren = LayoutKnowledgeRoute._addFileChildren(
+  LayoutKnowledgeRouteChildren,
+)
+
 interface LayoutRunsRouteChildren {
   LayoutRunsRunIdRoute: typeof LayoutRunsRunIdRoute
 }
@@ -348,6 +398,7 @@ interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutAgentsRoute: typeof LayoutAgentsRouteWithChildren
   LayoutApprovalsRoute: typeof LayoutApprovalsRoute
+  LayoutKnowledgeRoute: typeof LayoutKnowledgeRouteWithChildren
   LayoutPlaygroundRoute: typeof LayoutPlaygroundRoute
   LayoutRunsRoute: typeof LayoutRunsRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -359,6 +410,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutAgentsRoute: LayoutAgentsRouteWithChildren,
   LayoutApprovalsRoute: LayoutApprovalsRoute,
+  LayoutKnowledgeRoute: LayoutKnowledgeRouteWithChildren,
   LayoutPlaygroundRoute: LayoutPlaygroundRoute,
   LayoutRunsRoute: LayoutRunsRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,

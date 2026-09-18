@@ -12,5 +12,8 @@ alembic upgrade head
 # LangGraph maintains its own tables outside Alembic.
 python app/setup_checkpointer.py
 
+# Create the private document bucket.
+python app/setup_storage.py
+
 # Create initial data in DB
 python app/initial_data.py

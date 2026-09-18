@@ -4,6 +4,7 @@ from app.api.routes import (
     agents,
     approvals,
     conversations,
+    knowledge,
     login,
     private,
     runs,
@@ -14,6 +15,7 @@ from app.api.routes import (
 from app.core.config import settings
 
 api_router = APIRouter()
+api_router.include_router(knowledge.router)
 api_router.include_router(approvals.router)
 api_router.include_router(tools.router)
 api_router.include_router(login.router)

@@ -50,7 +50,9 @@ class Settings(BaseSettings):
     LLM_MAX_RETRIES: int = 2
 
     # --- Embedding ---
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_MODEL: str = "qwen3-vl-embedding"
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_BASE_URL: str = "https://dashscope.aliyuncs.com/api/v1"
     EMBEDDING_DIM: int = 1536
 
     # --- Agent runtime limits ---

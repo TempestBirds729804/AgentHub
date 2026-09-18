@@ -15,7 +15,7 @@ from app.worker.settings import (
     close_arq_pool,
     get_arq_redis_settings,
 )
-from app.worker.tasks import execute_run_task, resume_run_task
+from app.worker.tasks import execute_run_task, process_document_task, resume_run_task
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +37,11 @@ async def shutdown(_ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
-    functions = [execute_run_task, resume_run_task]
-    cron_jobs = [cron("app.worker.tasks.reap_stale_runs", minute=set(range(0, 60, 5)))]
+    functions = [execute_run_task, resume_run_task, process_document_task]
+    cron_jobs = [
+        cron("app.worker.tasks.reap_stale_documents", minute=set(range(0, 60, 5))),
+        cron("app.worker.tasks.reap_stale_runs", minute=set(range(0, 60, 5))),
+    ]
     redis_settings = get_arq_redis_settings()
     on_startup = startup
     on_shutdown = shutdown

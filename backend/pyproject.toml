@@ -29,6 +29,9 @@ dependencies = [
     "mcp==1.30.0",
     "arq>=0.26",
     "redis>=5",
+    "minio>=7.2.20",
+    "pypdf>=6.19.0",
+    "langchain-text-splitters>=1.1.2",
 ]
 
 [dependency-groups]

@@ -2,14 +2,28 @@ import asyncio
 import logging
 import uuid
 from datetime import timedelta
+from functools import partial
 from typing import Any
 
-from sqlalchemy import text
+from anyio import to_thread
+from sqlalchemy import delete, text
 from sqlmodel import col, select
 
+from app.agent.ingestion import embed_chunks, extract_text, split_text
 from app.core.async_db import async_engine, async_session_maker
+from app.core.config import settings
 from app.core.redis import get_redis
-from app.models import Run, RunEventType, RunStatus, get_datetime_utc
+from app.core.storage import get_object
+from app.models import (
+    Chunk,
+    Document,
+    DocumentStatus,
+    KnowledgeBase,
+    Run,
+    RunEventType,
+    RunStatus,
+    get_datetime_utc,
+)
 from app.services.event_bus import TERMINAL_STATUSES, RedisEventPublisher
 from app.services.rate_limit import release_run_slot, try_acquire_run_slot
 from app.services.run_service import (
@@ -169,3 +183,148 @@ async def reap_stale_runs(_ctx: dict[str, Any]) -> int:
             )
             await publisher.close()
     return len(runs)
+
+
+async def process_document_task(
+    _ctx: dict[str, Any], document_id: str
+) -> dict[str, Any]:
+    """Claim once, parse in a thread, and atomically replace all document chunks."""
+    doc_id = uuid.UUID(document_id)
+    async with async_session_maker() as session:
+        doc = await session.get(Document, doc_id, with_for_update=True)
+        if doc is None:
+            return {"status": "not_found"}
+        if doc.status in (DocumentStatus.READY, DocumentStatus.PROCESSING):
+            return {
+                "status": "already_ready"
+                if doc.status == DocumentStatus.READY
+                else "already_processing"
+            }
+        kb = await session.get(KnowledgeBase, doc.knowledge_base_id)
+        assert kb is not None
+        started_at = get_datetime_utc()
+        doc.sqlmodel_update(
+            {
+                "status": DocumentStatus.PROCESSING,
+                "started_at": started_at,
+                "error": None,
+                "chunk_count": 0,
+                "processed_at": None,
+            }
+        )
+        session.add(doc)
+        await session.commit()
+        try:
+            if (
+                kb.embedding_model != settings.EMBEDDING_MODEL
+                or kb.embedding_dim != settings.EMBEDDING_DIM
+            ):
+                raise ValueError(
+                    "Embedding configuration changed; rebuild the knowledge base"
+                )
+            data = await get_object(key=doc.storage_key)
+            content = await to_thread.run_sync(
+                partial(
+                    extract_text,
+                    data=data,
+                    mime_type=doc.mime_type,
+                    filename=doc.filename,
+                )
+            )
+            pieces = await to_thread.run_sync(
+                partial(
+                    split_text,
+                    text=content,
+                    chunk_size=kb.chunk_size,
+                    chunk_overlap=kb.chunk_overlap,
+                )
+            )
+            vectors = await embed_chunks(pieces)
+            # A deleted or reaped document must not be resurrected by a late response.
+            doc = await session.get(
+                Document, doc_id, with_for_update=True, populate_existing=True
+            )
+            if (
+                doc is None
+                or doc.status != DocumentStatus.PROCESSING
+                or doc.started_at != started_at
+            ):
+                return {"status": "discarded"}
+            await session.execute(delete(Chunk).where(col(Chunk.document_id) == doc_id))
+            for seq, (piece, vector) in enumerate(zip(pieces, vectors, strict=True)):
+                session.add(
+                    Chunk(
+                        document_id=doc_id,
+                        knowledge_base_id=doc.knowledge_base_id,
+                        seq=seq,
+                        content=piece,
+                        embedding=vector,
+                        metadata_={"filename": doc.filename},
+                    )
+                )
+            doc.sqlmodel_update(
+                {
+                    "status": DocumentStatus.READY,
+                    "chunk_count": len(pieces),
+                    "processed_at": get_datetime_utc(),
+                }
+            )
+            session.add(doc)
+            await session.commit()
+            return {"status": "ready", "chunks": len(pieces)}
+        except Exception as exc:
+            await session.rollback()
+            doc = await session.get(
+                Document, doc_id, with_for_update=True, populate_existing=True
+            )
+            if (
+                doc is not None
+                and doc.status == DocumentStatus.PROCESSING
+                and doc.started_at == started_at
+            ):
+                await session.execute(
+                    delete(Chunk).where(col(Chunk.document_id) == doc_id)
+                )
+                doc.sqlmodel_update(
+                    {
+                        "status": DocumentStatus.FAILED,
+                        "error": (str(exc) or type(exc).__name__)[:2000],
+                        "chunk_count": 0,
+                    }
+                )
+                session.add(doc)
+                await session.commit()
+            logger.warning(
+                "Document %s processing failed: %s", document_id, type(exc).__name__
+            )
+            return {"status": "failed"}
+
+
+async def reap_stale_documents(_ctx: dict[str, Any]) -> int:
+    cutoff = get_datetime_utc() - timedelta(minutes=30)
+    async with async_session_maker() as session:
+        documents = (
+            (
+                await session.execute(
+                    select(Document)
+                    .where(
+                        Document.status == DocumentStatus.PROCESSING,
+                        col(Document.started_at) < cutoff,
+                    )
+                    .with_for_update(skip_locked=True)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for doc in documents:
+            doc.sqlmodel_update(
+                {
+                    "status": DocumentStatus.FAILED,
+                    "error": "Document processing was interrupted; reprocess to retry",
+                    "chunk_count": 0,
+                }
+            )
+            session.add(doc)
+        await session.commit()
+        return len(documents)

@@ -16,6 +16,9 @@ from app.core.config import settings
 from app.core.db import engine, init_db
 from app.main import app
 from app.models import (
+    Chunk,
+    Document,
+    KnowledgeBase,
     Agent,
     AgentToolBinding,
     AgentVersion,
@@ -54,6 +57,9 @@ def db() -> Generator[Session]:
         init_db(session)
         yield session
         for model in (
+            Chunk,
+            Document,
+            KnowledgeBase,
             ApprovalRequest,
             RunEvent,
             Run,

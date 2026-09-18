@@ -11,6 +11,7 @@ from app.models.base import get_datetime_utc
 if TYPE_CHECKING:
     from app.models.agent import Agent
     from app.models.conversation import Conversation
+    from app.models.knowledge import KnowledgeBase
     from app.models.run import Run
     from app.models.tool import Tool
 
@@ -51,6 +52,9 @@ class UpdatePassword(SQLModel):
 
 
 class User(UserBase, table=True):
+    knowledge_bases: list["KnowledgeBase"] = Relationship(  # noqa: UP037
+        back_populates="owner", cascade_delete=True
+    )
     tools: list["Tool"] = Relationship(back_populates="owner", cascade_delete=True)  # noqa: UP037
     conversations: list["Conversation"] = Relationship(  # noqa: UP037
         back_populates="owner", cascade_delete=True

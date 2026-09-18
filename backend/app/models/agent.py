@@ -16,6 +16,9 @@ if TYPE_CHECKING:
 
 
 class AgentBase(SQLModel):
+    knowledge_base_ids: list[uuid.UUID] = Field(
+        default_factory=list, sa_type=JSONB, sa_column_kwargs={"server_default": "[]"}
+    )
     tool_ids: list[uuid.UUID] = Field(
         default_factory=list, sa_type=JSONB, sa_column_kwargs={"server_default": "[]"}
     )
@@ -34,6 +37,7 @@ class AgentCreate(AgentBase):
 
 
 class AgentUpdate(SQLModel):
+    knowledge_base_ids: list[uuid.UUID] | None = None
     tool_ids: list[uuid.UUID] | None = None
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=1000)

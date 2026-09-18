@@ -42,6 +42,22 @@ from app.models.conversation import (
     MessageRole,
     StreamMessageRequest,
 )
+from app.models.knowledge import (
+    Chunk,
+    Document,
+    DocumentPublic,
+    DocumentsPublic,
+    DocumentStatus,
+    KnowledgeBase,
+    KnowledgeBaseBase,
+    KnowledgeBaseCreate,
+    KnowledgeBasePublic,
+    KnowledgeBasesPublic,
+    KnowledgeBaseUpdate,
+    SearchRequest,
+    SearchResultPublic,
+    SearchResultsPublic,
+)
 from app.models.run import (
     Run,
     RunCreate,
@@ -81,6 +97,20 @@ from app.models.user import (
 )
 
 __all__ = [
+    "Chunk",
+    "Document",
+    "DocumentPublic",
+    "DocumentsPublic",
+    "DocumentStatus",
+    "KnowledgeBase",
+    "KnowledgeBaseBase",
+    "KnowledgeBaseCreate",
+    "KnowledgeBaseUpdate",
+    "KnowledgeBasePublic",
+    "KnowledgeBasesPublic",
+    "SearchRequest",
+    "SearchResultPublic",
+    "SearchResultsPublic",
     "ApprovalDecision",
     "ApprovalRequest",
     "ApprovalRequestBase",

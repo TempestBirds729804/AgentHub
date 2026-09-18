@@ -6,8 +6,9 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from app.agent.nodes import approval_gate, call_model, execute_tools
+from app.agent.nodes import approval_gate, call_model, execute_tools, retrieve_context
 from app.agent.state import AgentState
+from app.core.async_db import async_session_maker
 
 
 # ty cannot yet match TypedDict against LangGraph's StateLike protocol bound.
@@ -15,6 +16,7 @@ def build_agent_graph(
     tools: list[StructuredTool] | None = None,
     *,
     with_approval: bool = False,
+    with_retrieval: bool = False,
 ) -> StateGraph[AgentState, None, AgentState, AgentState]:  # ty: ignore[invalid-type-arguments]
     """Build a bounded tool loop, or a linear graph when no tools are bound."""
     graph: StateGraph[AgentState, None, AgentState, AgentState] = StateGraph(AgentState)  # ty: ignore[invalid-type-arguments, invalid-argument-type, invalid-assignment]
@@ -23,7 +25,16 @@ def build_agent_graph(
         return await call_model(state, tools=tools)
 
     graph.add_node("call_model", model_node)
-    graph.add_edge(START, "call_model")
+    if with_retrieval:
+
+        async def retrieval_node(state: AgentState) -> dict[str, object]:
+            return await retrieve_context(state, session_factory=async_session_maker)
+
+        graph.add_node("retrieve_context", retrieval_node)
+        graph.add_edge(START, "retrieve_context")
+        graph.add_edge("retrieve_context", "call_model")
+    else:
+        graph.add_edge(START, "call_model")
     if tools:
 
         async def tool_node(state: AgentState) -> dict[str, object]:
@@ -60,10 +71,11 @@ def compile_agent_graph(
     *,
     checkpointer: BaseCheckpointSaver[Any] | None = None,
     with_approval: bool = False,
+    with_retrieval: bool = False,
 ) -> CompiledStateGraph[
     AgentState, None, AgentState, AgentState  # ty: ignore[invalid-type-arguments]
 ]:
     """Optionally persist graph state for worker recovery."""
-    return build_agent_graph(tools, with_approval=with_approval).compile(
-        checkpointer=checkpointer
-    )
+    return build_agent_graph(
+        tools, with_approval=with_approval, with_retrieval=with_retrieval
+    ).compile(checkpointer=checkpointer)

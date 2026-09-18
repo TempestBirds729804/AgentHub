@@ -15,3 +15,4 @@ class AgentSnapshot(BaseModel):
     max_iterations: int = 10
     timeout_seconds: int = 300
     tool_ids: list[uuid.UUID] = Field(default_factory=list)
+    knowledge_base_ids: list[uuid.UUID] = Field(default_factory=list)

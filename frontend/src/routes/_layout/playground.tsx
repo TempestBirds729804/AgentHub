@@ -27,6 +27,7 @@ import {
 import ApprovalGroups, {
   approvalsQuery,
 } from "@/components/Approvals/ApprovalGroups"
+import Citations, { type CitationChunk } from "@/components/Knowledge/Citations"
 import ToolTrace from "@/components/Tools/ToolTrace"
 import { Button } from "@/components/ui/button"
 import {
@@ -254,6 +255,7 @@ function Chat({
   const [streaming, setStreaming] = useState(false)
   const [optimisticUser, setOptimisticUser] = useState("")
   const [text, setText] = useState("")
+  const [chunks, setChunks] = useState<CitationChunk[]>([])
   const [node, setNode] = useState<string | null>(null)
   const [events, setEvents] = useState<SSEEvent[]>([])
   const [runId, setRunId] = useState<string | null>(null)
@@ -327,7 +329,12 @@ function Chat({
     const data = evt.data as Record<string, unknown>
     if (typeof data.event_id === "string") lastEventId.current = data.event_id
     if (evt.event !== "model_chunk") setEvents((previous) => [...previous, evt])
-    if (evt.event === "run_started") setRunId(String(data.run_id))
+    if (evt.event === "run_started") {
+      setRunId(String(data.run_id))
+      if (!data.resumed) setChunks([])
+    }
+    if (evt.event === "context_retrieved" && Array.isArray(data.chunks))
+      setChunks(data.chunks as CitationChunk[])
     if (evt.event === "model_chunk")
       setText((previous) => previous + String(data.text ?? ""))
     if (evt.event === "node_started") {
@@ -458,7 +465,11 @@ function Chat({
             {!streaming &&
               message.role === "assistant" &&
               message.run_id === runId && <ToolTrace events={events} />}
-            <Bubble messageRole={message.role} content={message.content} />
+            <Bubble
+              messageRole={message.role}
+              content={message.content}
+              runId={message.run_id}
+            />
           </Fragment>
         ))}
         {optimisticUser && (
@@ -476,7 +487,11 @@ function Chat({
                 ? "executing tools"
                 : node || "Processing"}
             </div>
-            <Bubble messageRole="assistant" content={text || "…"} />
+            <Bubble
+              messageRole="assistant"
+              content={text || "…"}
+              chunks={chunks}
+            />
           </div>
         )}
         {truncated && (
@@ -594,9 +609,13 @@ function Chat({
 function Bubble({
   messageRole: role,
   content,
+  runId,
+  chunks,
 }: {
   messageRole: string
   content: string
+  runId?: string | null
+  chunks?: CitationChunk[]
 }) {
   return (
     <div
@@ -606,7 +625,11 @@ function Bubble({
       <div className="mb-1 text-xs font-semibold opacity-70">
         {role === "user" ? "You" : role === "assistant" ? "Assistant" : role}
       </div>
-      {content}
+      {role === "assistant" ? (
+        <Citations content={content} runId={runId} chunks={chunks} />
+      ) : (
+        content
+      )}
     </div>
   )
 }

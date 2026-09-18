@@ -18,11 +18,24 @@ from app.models import (
     AgentVersionCreate,
     AgentVersionPublic,
     AgentVersionsPublic,
+    KnowledgeBase,
     Message,
     Tool,
 )
 
 router = APIRouter(prefix="/agents", tags=["agents"])
+
+
+def _validate_knowledge_ids(
+    *, session: SessionDep, current_user: CurrentUser, ids: list[uuid.UUID]
+) -> None:
+    statement = select(KnowledgeBase).where(col(KnowledgeBase.id).in_(ids))
+    if not current_user.is_superuser:
+        statement = statement.where(KnowledgeBase.owner_id == current_user.id)
+    if len(session.exec(statement).all()) != len(set(ids)):
+        raise HTTPException(
+            400, "Some knowledge base ids are invalid or not owned by you"
+        )
 
 
 def _validate_tool_ids(
@@ -125,6 +138,9 @@ def create_agent(
     _validate_tool_ids(
         session=session, current_user=current_user, tool_ids=agent_in.tool_ids
     )
+    _validate_knowledge_ids(
+        session=session, current_user=current_user, ids=agent_in.knowledge_base_ids
+    )
     return crud.create_agent(
         session=session, agent_in=agent_in, owner_id=current_user.id
     )
@@ -145,6 +161,12 @@ def update_agent(
             raise HTTPException(status_code=422, detail="tool_ids cannot be null")
         _validate_tool_ids(
             session=session, current_user=current_user, tool_ids=agent_in.tool_ids
+        )
+    if "knowledge_base_ids" in agent_in.model_fields_set:
+        if agent_in.knowledge_base_ids is None:
+            raise HTTPException(422, "knowledge_base_ids cannot be null")
+        _validate_knowledge_ids(
+            session=session, current_user=current_user, ids=agent_in.knowledge_base_ids
         )
     return crud.update_agent(session=session, db_agent=agent, agent_in=agent_in)
 
@@ -180,6 +202,11 @@ def publish_version(
             session=session,
             current_user=current_user,
             tool_ids=[uuid.UUID(str(value)) for value in agent.tool_ids],
+        )
+        _validate_knowledge_ids(
+            session=session,
+            current_user=current_user,
+            ids=[uuid.UUID(str(value)) for value in agent.knowledge_base_ids],
         )
         version = crud.publish_agent_version(
             session=session, db_agent=agent, changelog=version_in.changelog

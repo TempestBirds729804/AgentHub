@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import {
   Activity,
+  BookOpen,
   Bot,
   Home,
   MessageSquare,
@@ -25,6 +26,7 @@ import { User } from "./User"
 const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
   { icon: Bot, title: "Agents", path: "/agents" },
+  { icon: BookOpen, title: "Knowledge", path: "/knowledge" },
   { icon: Wrench, title: "Tools", path: "/tools" },
   { icon: MessageSquare, title: "Playground", path: "/playground" },
   { icon: Activity, title: "Runs", path: "/runs" },
