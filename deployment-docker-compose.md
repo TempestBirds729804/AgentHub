@@ -1,5 +1,7 @@
 # AgentHub - Docker Compose Deployment
 
+MinIO is built locally from official source commit `7aac2a2c5b7c882e68c1ce017d8256be2feea27f` using `docker/minio/Dockerfile`; no prebuilt MinIO or mc image is required. The initial build needs GitHub, Go modules and official Go/Debian base images. The image includes the AGPL license and source revision label; [corresponding source](https://github.com/minio/minio/tree/7aac2a2c5b7c882e68c1ce017d8256be2feea27f) is pinned. Review upstream security updates before changing the pin. Volume names and S3 configuration are unchanged; back up existing data before upgrading an existing deployment.
+
 You can deploy the project to your own remote server with Docker Compose. The deployment configuration includes Traefik to handle HTTPS and route incoming traffic to the application.
 
 This is the full-platform deployment path: PostgreSQL/pgvector, Redis, MinIO, API/frontend, arq worker and the read-only MCP service. The FastAPI Cloud workflow deploys only the API and is opt-in.

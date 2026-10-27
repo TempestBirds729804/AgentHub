@@ -792,6 +792,9 @@ docker compose up -d db redis minio mailpit
 
 ## 偏差记录
 
+- 2026-10-27 用户授权从 MinIO 官方固定源码构建：远端 CI 拉取 `minio/minio` 被拒绝，本地缓存曾掩盖此问题。新增 `docker/minio/Dockerfile`，固定官方提交 `7aac2a2c5b7c882e68c1ce017d8256be2feea27f`，保留 S3 接口和现有数据卷；Compose 改用本地构建及 HTTP readiness，不依赖预构建 MinIO/mc 镜像。同步 CI 构建步骤、超时及部署说明。
+- 同次真实链路复验：本地隔离环境 5 项 Playwright 用例全部通过（含认证 setup），覆盖扫描 PDF 失败/重试/删除、Qwen 向量化与检索、引用持久化、真实模型流式记忆及独立 MCP 调用。使用本地密钥且未上传 GitHub，未执行密钥轮换或公网部署。Playwright 启动测试容器使用 `--no-deps`，避免已健康的 API 被 Compose 重建后立即测试导致连接拒绝。
+
 - 2026-10-27 用户授权凭据与仓库卫生、CI/部署闭环修复：将根 `.env` 改为本地忽略文件，以脱敏 `.env.example` 提供开发/CI 默认值；同步 AGENTS.md、README/development/deployment 说明、Git/Docker 忽略规则和相关 GitHub Actions。修复阶段 08 后 CI 缺少 MinIO、分支触发、worker/MCP 启动与部署配置透传；前端测试仅修复已确认的格式问题。使用独立 Compose 项目验证，保留既有业务数据和用户文档。不将本地验证描述为远端发布或供应商密钥已轮换。
 - 同次镜像构建发现浮动 Bun 版本及不冻结安装会改写锁文件；配套修改后端/Playwright Dockerfile，固定已有 CI Bun 1.3.12、补齐 react-email workspace manifest，使用 `--frozen-lockfile`。不升级业务依赖。
 - Playwright 验收后确认生成的 `test-results` 会导致全目录 Biome 失败；在 `frontend/biome.json` 排除 `test-results` 和 `blob-report` 两个测试产物目录，防止 lint 改写测试证据。

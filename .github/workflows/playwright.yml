@@ -42,13 +42,14 @@ jobs:
             - bun.lock
             - uv.lock
             - compose*.yml
+            - docker/minio/**
             - .github/workflows/playwright.yml
 
   test-playwright:
     needs:
       - changes
     if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.changed == 'true' }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -89,7 +90,7 @@ jobs:
     - run: docker compose run --rm backend bash scripts/prestart.sh
     - run: docker compose up -d --wait backend worker mcp-docs mailpit
     - name: Run Playwright tests
-      run: docker compose run --rm playwright bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+      run: docker compose run --no-deps --rm playwright bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
     - name: Stop CI services
       if: always()
       run: docker compose down -v --remove-orphans
