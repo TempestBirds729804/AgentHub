@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, approvalsDecideApprovalData, approvalsDecideApprovalErrors, approvalsDecideApprovalResponses, approvalsReadApprovalData, approvalsReadApprovalErrors, approvalsReadApprovalResponses, approvalsReadApprovalsData, approvalsReadApprovalsErrors, approvalsReadApprovalsResponses, conversationsCreateConversationData, conversationsCreateConversationErrors, conversationsCreateConversationResponses, conversationsDeleteConversationData, conversationsDeleteConversationErrors, conversationsDeleteConversationResponses, conversationsReadConversationData, conversationsReadConversationErrors, conversationsReadConversationResponses, conversationsReadConversationsData, conversationsReadConversationsErrors, conversationsReadConversationsResponses, conversationsReadMessagesData, conversationsReadMessagesErrors, conversationsReadMessagesResponses, conversationsStreamMessageData, conversationsStreamMessageErrors, conversationsStreamMessageResponses, conversationsUpdateConversationData, conversationsUpdateConversationErrors, conversationsUpdateConversationResponses, knowledgeCreateKnowledgeData, knowledgeCreateKnowledgeErrors, knowledgeCreateKnowledgeResponses, knowledgeDeleteDocumentData, knowledgeDeleteDocumentErrors, knowledgeDeleteDocumentResponses, knowledgeDeleteKnowledgeData, knowledgeDeleteKnowledgeErrors, knowledgeDeleteKnowledgeResponses, knowledgeReadDocumentsData, knowledgeReadDocumentsErrors, knowledgeReadDocumentsResponses, knowledgeReadKnowledgeBasesData, knowledgeReadKnowledgeBasesErrors, knowledgeReadKnowledgeBasesResponses, knowledgeReadKnowledgeData, knowledgeReadKnowledgeErrors, knowledgeReadKnowledgeResponses, knowledgeReprocessDocumentData, knowledgeReprocessDocumentErrors, knowledgeReprocessDocumentResponses, knowledgeSearchKnowledgeData, knowledgeSearchKnowledgeErrors, knowledgeSearchKnowledgeResponses, knowledgeUpdateKnowledgeData, knowledgeUpdateKnowledgeErrors, knowledgeUpdateKnowledgeResponses, knowledgeUploadDocumentData, knowledgeUploadDocumentErrors, knowledgeUploadDocumentResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCancelRunData, runsCancelRunErrors, runsCancelRunResponses, runsCreateAsyncRunData, runsCreateAsyncRunErrors, runsCreateAsyncRunResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, runsRetryRunData, runsRetryRunErrors, runsRetryRunResponses, runsStreamRunEventsData, runsStreamRunEventsErrors, runsStreamRunEventsResponses, toolsCreateToolData, toolsCreateToolErrors, toolsCreateToolResponses, toolsDeleteToolData, toolsDeleteToolErrors, toolsDeleteToolResponses, toolsReadBuiltinFunctionsData, toolsReadBuiltinFunctionsResponses, toolsReadToolData, toolsReadToolErrors, toolsReadToolResponses, toolsReadToolsData, toolsReadToolsErrors, toolsReadToolsResponses, toolsTestToolData, toolsTestToolErrors, toolsTestToolResponses, toolsUpdateToolData, toolsUpdateToolErrors, toolsUpdateToolResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { agentsCreateAgentData, agentsCreateAgentErrors, agentsCreateAgentResponses, agentsDeleteAgentData, agentsDeleteAgentErrors, agentsDeleteAgentResponses, agentsPublishVersionData, agentsPublishVersionErrors, agentsPublishVersionResponses, agentsReadAgentData, agentsReadAgentErrors, agentsReadAgentResponses, agentsReadAgentsData, agentsReadAgentsErrors, agentsReadAgentsResponses, agentsReadVersionData, agentsReadVersionErrors, agentsReadVersionResponses, agentsReadVersionsData, agentsReadVersionsErrors, agentsReadVersionsResponses, agentsUpdateAgentData, agentsUpdateAgentErrors, agentsUpdateAgentResponses, approvalsDecideApprovalData, approvalsDecideApprovalErrors, approvalsDecideApprovalResponses, approvalsReadApprovalData, approvalsReadApprovalErrors, approvalsReadApprovalResponses, approvalsReadApprovalsData, approvalsReadApprovalsErrors, approvalsReadApprovalsResponses, conversationsCreateConversationData, conversationsCreateConversationErrors, conversationsCreateConversationResponses, conversationsDeleteConversationData, conversationsDeleteConversationErrors, conversationsDeleteConversationResponses, conversationsReadConversationData, conversationsReadConversationErrors, conversationsReadConversationResponses, conversationsReadConversationsData, conversationsReadConversationsErrors, conversationsReadConversationsResponses, conversationsReadMessagesData, conversationsReadMessagesErrors, conversationsReadMessagesResponses, conversationsStreamMessageData, conversationsStreamMessageErrors, conversationsStreamMessageResponses, conversationsUpdateConversationData, conversationsUpdateConversationErrors, conversationsUpdateConversationResponses, evalsCancelEvalRunData, evalsCancelEvalRunErrors, evalsCancelEvalRunResponses, evalsCompareEvalRunsData, evalsCompareEvalRunsErrors, evalsCompareEvalRunsResponses, evalsCreateCaseData, evalsCreateCaseErrors, evalsCreateCaseResponses, evalsCreateEvalRunData, evalsCreateEvalRunErrors, evalsCreateEvalRunResponses, evalsDeleteCaseData, evalsDeleteCaseErrors, evalsDeleteCaseResponses, evalsImportCasesData, evalsImportCasesErrors, evalsImportCasesResponses, evalsReadCaseData, evalsReadCaseErrors, evalsReadCaseResponses, evalsReadCasesData, evalsReadCasesErrors, evalsReadCasesResponses, evalsReadEvalRunData, evalsReadEvalRunErrors, evalsReadEvalRunResponses, evalsReadEvalRunsData, evalsReadEvalRunsErrors, evalsReadEvalRunsResponses, evalsReadResultsData, evalsReadResultsErrors, evalsReadResultsResponses, evalsUpdateCaseData, evalsUpdateCaseErrors, evalsUpdateCaseResponses, knowledgeCreateKnowledgeData, knowledgeCreateKnowledgeErrors, knowledgeCreateKnowledgeResponses, knowledgeDeleteDocumentData, knowledgeDeleteDocumentErrors, knowledgeDeleteDocumentResponses, knowledgeDeleteKnowledgeData, knowledgeDeleteKnowledgeErrors, knowledgeDeleteKnowledgeResponses, knowledgeReadDocumentsData, knowledgeReadDocumentsErrors, knowledgeReadDocumentsResponses, knowledgeReadKnowledgeBasesData, knowledgeReadKnowledgeBasesErrors, knowledgeReadKnowledgeBasesResponses, knowledgeReadKnowledgeData, knowledgeReadKnowledgeErrors, knowledgeReadKnowledgeResponses, knowledgeReprocessDocumentData, knowledgeReprocessDocumentErrors, knowledgeReprocessDocumentResponses, knowledgeSearchKnowledgeData, knowledgeSearchKnowledgeErrors, knowledgeSearchKnowledgeResponses, knowledgeUpdateKnowledgeData, knowledgeUpdateKnowledgeErrors, knowledgeUpdateKnowledgeResponses, knowledgeUploadDocumentData, knowledgeUploadDocumentErrors, knowledgeUploadDocumentResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, monitoringReadOverviewData, monitoringReadOverviewResponses, monitoringReadRecentFailuresData, monitoringReadRecentFailuresResponses, monitoringReadSystemData, monitoringReadSystemResponses, monitoringReadTopUsersData, monitoringReadTopUsersErrors, monitoringReadTopUsersResponses, monitoringReadUsageData, monitoringReadUsageErrors, monitoringReadUsageResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, runsCancelRunData, runsCancelRunErrors, runsCancelRunResponses, runsCreateAsyncRunData, runsCreateAsyncRunErrors, runsCreateAsyncRunResponses, runsCreateRunData, runsCreateRunErrors, runsCreateRunResponses, runsReadEventsData, runsReadEventsErrors, runsReadEventsResponses, runsReadRunData, runsReadRunErrors, runsReadRunResponses, runsReadRunsData, runsReadRunsErrors, runsReadRunsResponses, runsRetryRunData, runsRetryRunErrors, runsRetryRunResponses, runsStreamRunEventsData, runsStreamRunEventsErrors, runsStreamRunEventsResponses, toolsCreateToolData, toolsCreateToolErrors, toolsCreateToolResponses, toolsDeleteToolData, toolsDeleteToolErrors, toolsDeleteToolResponses, toolsReadBuiltinFunctionsData, toolsReadBuiltinFunctionsResponses, toolsReadToolData, toolsReadToolErrors, toolsReadToolResponses, toolsReadToolsData, toolsReadToolsErrors, toolsReadToolsResponses, toolsTestToolData, toolsTestToolErrors, toolsTestToolResponses, toolsUpdateToolData, toolsUpdateToolErrors, toolsUpdateToolResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,264 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: Record<string, unknown>;
 };
+
+export class MonitoringService {
+    /**
+     * Read Overview
+     *
+     * Retrieve platform totals and recent run statistics.
+     */
+    public static readOverview<ThrowOnError extends boolean = true>(options?: Options<monitoringReadOverviewData, ThrowOnError>) {
+        return (options?.client ?? client).get<monitoringReadOverviewResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/monitoring/overview',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Usage
+     *
+     * Retrieve UTC daily usage, including days without runs.
+     */
+    public static readUsage<ThrowOnError extends boolean = true>(options?: Options<monitoringReadUsageData, ThrowOnError>) {
+        return (options?.client ?? client).get<monitoringReadUsageResponses, monitoringReadUsageErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/monitoring/usage',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Top Users
+     *
+     * Retrieve the thirty-day user usage ranking.
+     */
+    public static readTopUsers<ThrowOnError extends boolean = true>(options?: Options<monitoringReadTopUsersData, ThrowOnError>) {
+        return (options?.client ?? client).get<monitoringReadTopUsersResponses, monitoringReadTopUsersErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/monitoring/top-users',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Recent Failures
+     *
+     * Retrieve the fifty latest failed runs.
+     */
+    public static readRecentFailures<ThrowOnError extends boolean = true>(options?: Options<monitoringReadRecentFailuresData, ThrowOnError>) {
+        return (options?.client ?? client).get<monitoringReadRecentFailuresResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/monitoring/recent-failures',
+            ...options
+        });
+    }
+    
+    /**
+     * Read System
+     *
+     * Check components independently with bounded timeouts.
+     */
+    public static readSystem<ThrowOnError extends boolean = true>(options?: Options<monitoringReadSystemData, ThrowOnError>) {
+        return (options?.client ?? client).get<monitoringReadSystemResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/monitoring/system',
+            ...options
+        });
+    }
+}
+
+export class EvalsService {
+    /**
+     * Read Cases
+     *
+     * List evaluation cases belonging to an agent.
+     */
+    public static readCases<ThrowOnError extends boolean = true>(options: Options<evalsReadCasesData, ThrowOnError>) {
+        return (options.client ?? client).get<evalsReadCasesResponses, evalsReadCasesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/cases',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Case
+     *
+     * Create an evaluation case with validated assertions.
+     */
+    public static createCase<ThrowOnError extends boolean = true>(options: Options<evalsCreateCaseData, ThrowOnError>) {
+        return (options.client ?? client).post<evalsCreateCaseResponses, evalsCreateCaseErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/cases',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Import Cases
+     *
+     * Import a validated JSON array of evaluation cases atomically.
+     */
+    public static importCases<ThrowOnError extends boolean = true>(options: Options<evalsImportCasesData, ThrowOnError>) {
+        return (options.client ?? client).post<evalsImportCasesResponses, evalsImportCasesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/cases/import',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Case
+     *
+     * Delete a case only when it is not selected by an active batch.
+     */
+    public static deleteCase<ThrowOnError extends boolean = true>(options: Options<evalsDeleteCaseData, ThrowOnError>) {
+        return (options.client ?? client).delete<evalsDeleteCaseResponses, evalsDeleteCaseErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/cases/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Case
+     *
+     * Retrieve an owned evaluation case.
+     */
+    public static readCase<ThrowOnError extends boolean = true>(options: Options<evalsReadCaseData, ThrowOnError>) {
+        return (options.client ?? client).get<evalsReadCaseResponses, evalsReadCaseErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/cases/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Case
+     *
+     * Update an evaluation case without changing queued snapshots.
+     */
+    public static updateCase<ThrowOnError extends boolean = true>(options: Options<evalsUpdateCaseData, ThrowOnError>) {
+        return (options.client ?? client).patch<evalsUpdateCaseResponses, evalsUpdateCaseErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/cases/{id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Eval Runs
+     *
+     * List owned evaluation batches with progress and summaries.
+     */
+    public static readEvalRuns<ThrowOnError extends boolean = true>(options?: Options<evalsReadEvalRunsData, ThrowOnError>) {
+        return (options?.client ?? client).get<evalsReadEvalRunsResponses, evalsReadEvalRunsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/runs',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Eval Run
+     *
+     * Snapshot selected cases and enqueue a background evaluation.
+     */
+    public static createEvalRun<ThrowOnError extends boolean = true>(options: Options<evalsCreateEvalRunData, ThrowOnError>) {
+        return (options.client ?? client).post<evalsCreateEvalRunResponses, evalsCreateEvalRunErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/runs',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Eval Run
+     *
+     * Retrieve an owned evaluation batch and its statistics.
+     */
+    public static readEvalRun<ThrowOnError extends boolean = true>(options: Options<evalsReadEvalRunData, ThrowOnError>) {
+        return (options.client ?? client).get<evalsReadEvalRunResponses, evalsReadEvalRunErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/runs/{id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Results
+     *
+     * List assertion outcomes, failures first, with links to actual runs.
+     */
+    public static readResults<ThrowOnError extends boolean = true>(options: Options<evalsReadResultsData, ThrowOnError>) {
+        return (options.client ?? client).get<evalsReadResultsResponses, evalsReadResultsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/runs/{id}/results',
+            ...options
+        });
+    }
+    
+    /**
+     * Cancel Eval Run
+     *
+     * Cancel an owned queued or running evaluation batch.
+     */
+    public static cancelEvalRun<ThrowOnError extends boolean = true>(options: Options<evalsCancelEvalRunData, ThrowOnError>) {
+        return (options.client ?? client).post<evalsCancelEvalRunResponses, evalsCancelEvalRunErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/runs/{id}/cancel',
+            ...options
+        });
+    }
+    
+    /**
+     * Compare Eval Runs
+     *
+     * Compare two owned batches using the union of their case IDs.
+     */
+    public static compareEvalRuns<ThrowOnError extends boolean = true>(options: Options<evalsCompareEvalRunsData, ThrowOnError>) {
+        return (options.client ?? client).get<evalsCompareEvalRunsResponses, evalsCompareEvalRunsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/evals/compare',
+            ...options
+        });
+    }
+}
 
 export class KnowledgeService {
     /**

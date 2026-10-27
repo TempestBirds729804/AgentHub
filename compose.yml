@@ -119,6 +119,10 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_MODEL: ${LLM_MODEL:-}
+      EVAL_JUDGE_MODEL: ${EVAL_JUDGE_MODEL:-}
+      EVAL_CONCURRENCY: ${EVAL_CONCURRENCY:-3}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-https://dashscope.aliyuncs.com/api/v1}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
@@ -148,11 +152,15 @@ services:
       - traefik.http.services.backend.loadbalancer.server.port=8000
 
       # Route HTTP traffic for this domain
-      - traefik.http.routers.backend-http.rule=Host(`${DOMAIN:-localhost}`)
+      - traefik.http.routers.backend-http.rule=Host(`${DOMAIN:-localhost}`) && !PathPrefix(`/metrics`)
       - traefik.http.routers.backend-http.entrypoints=http
+
+    tmpfs:
+      - /tmp/prometheus
 
   worker:
     image: backend:latest
+    restart: unless-stopped
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -164,7 +172,11 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    environment: *backend-env
+    environment:
+      <<: *backend-env
+      WORKER_METRICS_PORT: "9000"
+    tmpfs:
+      - /tmp/prometheus
     command: ["arq", "app.worker.main.WorkerSettings"]
     healthcheck:
       test: ["CMD", "arq", "app.worker.main.WorkerSettings", "--check"]
@@ -172,7 +184,35 @@ services:
       timeout: 10s
       retries: 3
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.137.0
+    profiles: [monitoring]
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./monitoring/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+
+  prometheus:
+    image: prom/prometheus:v3.7.1
+    profiles: [monitoring]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=15d"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - app-prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    profiles: [monitoring]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-local-monitoring-only}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - app-grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
 volumes:
+  app-prometheus-data:
+  app-grafana-data:
   app-db-data:
   app-redis-data:
   app-minio-data:

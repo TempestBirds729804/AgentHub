@@ -1001,24 +1001,24 @@ p95 的边界：1 条用例、2 条用例时不越界。
 
 ## 阶段验收清单
 
-- [ ] `uv run alembic check` 输出 `No new upgrade operations detected.`
-- [ ] `uv run pytest tests/ -v` 全绿
-- [ ] 测试不调真实 API（`LLM_BASE_URL` 改无效后仍全绿）
-- [ ] 每种断言类型都有通过和不通过两条测试
-- [ ] 用例崩溃隔离测试通过（一条崩其它照常完成）
-- [ ] 并发限制测试通过（峰值不超过 `EVAL_CONCURRENCY`）
-- [ ] p95 在 1 条和 2 条用例时不越界
-- [ ] regression 判定测试通过
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] `bun run lint` 通过
-- [ ] 手动完成任务 6.4 的七步验证，重点是第 6 步的 regression 展示
-- [ ] 手动验证：评测运行中进度条实时更新
-- [ ] 手动验证：LLM judge 断言能给出合理分数和理由
-- [ ] 手动验证：非法正则在创建用例时就被拒绝（400），而不是跑评测时才失败
-- [ ] 手动验证：评测过程中不触发用户级并发限流（不出现 429 导致的用例失败）
-- [ ] `SELECT status, count(*) FROM eval_run GROUP BY status;` 没有卡在 running 的记录
-- [ ] `SELECT count(*) FROM eval_result WHERE run_id IS NULL;` 返回 0（每条结果都有对应的 Run）
+- [x] `uv run alembic check` 输出 `No new upgrade operations detected.`
+- [x] 后端默认测试全绿（真实 MCP 集成测试另行运行）
+- [x] 默认测试不调真实 API（无效 `LLM_BASE_URL` 下通过）
+- [x] 每种断言类型都有通过和不通过两条测试
+- [x] 用例崩溃隔离测试通过（一条崩其它照常完成）
+- [x] 并发限制测试通过（峰值不超过 `EVAL_CONCURRENCY`）
+- [x] p95 在 1 条和 2 条用例时不越界
+- [x] regression 判定测试通过
+- [x] `cd backend && bash scripts/lint.sh` 全绿
+- [x] `cd backend && bash scripts/test.sh` 全绿
+- [x] `bun run lint` 通过
+- [x] 用 Playwright 实际浏览器完成用例管理、真实版本评测、regression 展示与 Run 跳转
+- [x] 页面轮询完成后进度条更新至 3/3（Playwright 断言）
+- [x] 真实 LLM judge 返回分数和理由
+- [x] 非法正则在创建用例时返回 400（API 回归测试）
+- [x] 真实评测批次未触发用户级并发限流
+- [x] 实际 SQL 查询：没有卡在 running 的记录
+- [x] 实际 SQL 查询：eval_result 的空 run_id 数为 0
 
 ---
 
@@ -1061,7 +1061,12 @@ p95 的边界：1 条用例、2 条用例时不越界。
 
 ## 偏差记录
 
+- P1 最终回归：269 个后端测试通过，最后一轮覆盖率 92%（通过 90% 门槛），另 10 个 MCP 集成测试通过（含真实模型故障链路）；迁移 check 无差异。最后补齐取消/入队失败/陈旧批次指标后，相关 API + Worker 再跑 12 passed，重复取消不重复计数。Playwright 用例管理、真实三用例 v1/v2 + judge 对比、进度条更新、Run 跳转及管理员权限验证通过。正则隔离采用有 2 秒硬超时的子进程，由线程等待，兼容本机 Selector event loop；超时杀死并回收子进程。真实模型费用为实际调用，未轮换供应商密钥，未公网部署。
+
+- 阶段 09 首轮验收（2026-10-27）：隔离数据库迁移生成/升级及 alembic check 通过；后端全量 248 passed、10 deselected、覆盖率 93%，四项静态检查通过；随后新增失败路径测试，Worker 专项 9 passed。前端 lint、类型检查、构建通过。Playwright 3 passed（含登录、用例编辑/导入、真实模型 v1/v2 + judge 对比及 Run 跳转）；v1 为 3/3，v2 为 0/3。真实批次均 succeeded，无空 run_id；仅绑定 127.0.0.1:18090，使用独立 agenthub_eval_live 库与 Redis DB 14，不触及开发数据。截图保留在 frontend/test-results/eval-live-*.png。完整 P1 结束时再次回归。
+- 2026-10-27 P1 开始实施：除本文列出的文件外，配套修改配置、Worker 注册、API 汇总、生成客户端、侧栏和 Agent 详情页、测试辅助文件及验收脚本。评测直接复用带事件记录的 checkpoint 执行器，以保留真实工具轨迹；它不经过用户限流入口，不增加无效的 skip_rate_limit 参数。批次保存选中用例的快照，避免排队期间编辑造成结果漂移；这不是数据集版本管理。未知成本不当作零，judge 成本暂不纳入并在界面说明。
 - `EVAL_CONCURRENCY` 的最终取值：
+- 正则使用最长 200 字符、独立可终止子进程及 2 秒超时；不依赖无法中断阻塞正则的 asyncio/arq 超时。配置项同步到 `.env.example` 和 Compose 环境。离线评测碰到人工审批时记失败并过期待审批项，不自动批准高风险工具。
 - judge 模型选择：
 - 是否把 judge 成本算进总成本：
 - 是否实现文本 diff 高亮：

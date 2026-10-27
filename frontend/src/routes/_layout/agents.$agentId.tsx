@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type AgentPublic, AgentsService } from "@/client"
+import TestCases from "@/components/Evals/TestCases"
 import KnowledgeSelection from "@/components/Knowledge/KnowledgeSelection"
 import RunAgent from "@/components/Runs/RunAgent"
 import ToolSelection from "@/components/Tools/ToolSelection"
@@ -485,6 +486,7 @@ function AgentDetail() {
       </div>
       <Tabs defaultValue="configuration">
         <TabsList>
+          <TabsTrigger value="test-cases">Test Cases</TabsTrigger>
           <TabsTrigger value="configuration">Configuration</TabsTrigger>
           <TabsTrigger value="versions" data-testid="versions-tab">
             Versions
@@ -492,6 +494,9 @@ function AgentDetail() {
         </TabsList>
         <TabsContent value="configuration">
           <ConfigurationForm agent={agent} />
+        </TabsContent>
+        <TabsContent value="test-cases">
+          <TestCases agent={agent} />
         </TabsContent>
         <TabsContent value="versions">
           <Versions agentId={agentId} />

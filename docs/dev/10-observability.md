@@ -912,22 +912,21 @@ docker compose start redis
 
 ## 阶段验收清单
 
-- [ ] `uv run pytest tests/ -v` 全绿
-- [ ] 测试不依赖 OTel collector（`OTEL_EXPORTER_OTLP_ENDPOINT` 为空时全绿）
-- [ ] `runs_in_progress` 在 Run 结束后归零的测试通过
-- [ ] contextvars 并发隔离测试通过
-- [ ] `/system` 在组件不可用时返回 200 + `healthy=false` 而不是 500
-- [ ] `cd backend && bash scripts/lint.sh` 全绿
-- [ ] `cd backend && bash scripts/test.sh` 全绿
-- [ ] `bun run lint` 通过
-- [ ] 手动完成任务 7.5 的七步验证
-- [ ] Prometheus 的 `/targets` 页面里 api 和 worker 都是 UP
-- [ ] Grafana 面板从 provisioning 自动加载（`docker compose down -v` 后重新 up 仍然有面板）
-- [ ] 检查标签基数：`curl -s localhost:8000/metrics | wc -l` 的行数在合理范围（几百行，不是几万行）。如果异常多，说明有高基数标签
-- [ ] `/metrics` 在 `compose.deploy.yml` 下**无法**从公网访问
-- [ ] 普通用户访问 `/api/v1/monitoring/overview` 返回 403
-- [ ] worker 日志里每行都有 run_id，并发执行时不串味
-- [ ] OTel collector 日志里能看到 `agent.run` 和 `agent.node.*` 的 span 层级关系
+- [x] 默认后端回归及独立 MCP 集成测试全绿
+- [x] 默认测试不依赖 OTel collector
+- [x] `runs_in_progress` 在成功、失败、取消和异常后归零的测试通过
+- [x] contextvars 并发隔离测试通过
+- [x] `/system` 在组件不可用时返回 200 + `healthy=false`
+- [x] 后端 lint、类型检查和测试通过
+- [x] 前端 lint、类型检查和构建通过
+- [x] 独立本机环境执行任务 7.5：真实成功/失败 Run、工具调用、抓取、面板、Trace、关联日志、管理员页面和 Redis 停机验证
+- [x] Prometheus targets API 确认 API 与 Worker 均 UP
+- [x] 全新 Grafana 数据库实例从 provisioning 加载 4 组、17 个面板（未删除已有数据卷）
+- [x] 指标标签没有资源 UUID，实测指标文本约数百行
+- [x] HTTP/HTTPS Compose 规则排除 `/metrics`；同规则本机 Traefik 返回 404（公网/TLS 按用户要求未部署、未验收）
+- [x] 普通用户访问全部监控 API 返回 403，页面路由也阻止访问
+- [x] 运行期间的 worker 应用日志带各自 run_id/user_id；非 Run 日志使用 `-`
+- [x] Collector 日志具有 `agent.run`、`agent.node.*`、`agent.tool.function` span
 
 ---
 
@@ -973,6 +972,15 @@ span attribute 里放了 prompt 或模型回复。只放 id、模型名、token 
 
 ## 偏差记录
 
+- 最后一轮结果更新：后端 269 passed，覆盖率 92%（门槛 90%）；尾部指标改动后 API/Worker 专项再跑 12 passed。前端主验收 5 passed、1 skipped（Redis 故障用例单独执行为 2 passed，含 setup）。Grafana 最终 4 分组/17 面板全部 PromQL 查询合法；真实工具成功与无效模型失败均已验收。验收用 Grafana 编辑实例与代理测试实例已停止，保留本机 API :18090、Grafana :13001、Prometheus :19090 和隔离数据供复查；这些端口均只绑定 127.0.0.1。未提交、未推送、未触发 P1 远端 CI。
+
+- P1 验证（2026-10-27）：269 个后端单测/回归通过、覆盖率 93%，另 10 个 MCP 集成测试通过；四项后端静态检查、前端 lint/类型检查/构建、Alembic check 通过。Playwright 主流程 5 passed，Redis 停机单独 2 passed（均包含登录 setup）。API 四进程下连续 20 次 overview 请求计数从 1 增至 21，指标文本 547 行；Prometheus API/Worker 均 UP。Collector 已观察 agent.run / agent.node.call_model 层级，Worker 并发 Run 日志携带各自 run_id/user_id。Grafana 在全新数据库实例中自动加载 UI 导出的 17 面板配置。独立本机 Traefik 验证健康检查 200、/metrics 和 /metrics/ 均 404；部署 Compose 配置校验通过，公网/TLS 未验收且不部署。
+- 故障验证发现 arq 默认心跳可存活一小时，改为每 15 秒刷新，避免长期陈旧绿灯；本地 Compose worker 增加 unless-stopped 重启策略（部署原有 always 仍覆盖）。隔离验收的 one-off worker 在 Redis 恢复后已手动启动；开发项目容器和数据未改动。
+
+- Grafana 的 17 个查询面板和 Row 模板均在 Grafana 12.2 UI 创建、下载导出；随后仅按标题类别机械重排导出配置的网格位置，形成 Overview / Latency / Cost / Errors 四组，不手写面板定义。Overview 不重复请求 Redis，队列深度由独立 `/system` 返回，避免 Redis 故障拖慢历史统计。
+
+- 2026-10-27 P1 开始实施：配套修改依赖/锁文件、API 汇总、生成客户端、运行服务与节点、工具适配器、审批路由、Worker 生命周期、Compose 及部署说明。监控服务只通过 monitoring profile 启动，宿主机端口仅绑定 127.0.0.1；不进行公网部署。保留 API 四进程，使用独立 tmpfs 的 Prometheus multiprocess 模式。Traefik 的 Host 规则原本覆盖所有路径，必须显式排除 /metrics，不能仅以“不新增路由”声称隔离。
+- 最小范围选择：人类可读的上下文日志、Collector debug exporter，不接 Tempo 或额外数据库 exporter，不做跨队列 trace 传播；管理员趋势图用 CSS 柱状图，不引入前端图表依赖。
 - 是否实现 API 到 worker 的 trace 关联：
 - 是否接 Tempo（还是只用 debug exporter）：
 - 是否加 postgres / redis exporter：

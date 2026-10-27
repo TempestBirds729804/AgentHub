@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 import uuid
 from collections.abc import Callable
 from typing import Any
@@ -20,11 +21,15 @@ from app.agent.exceptions import AgentError, ModelCallError
 from app.agent.guardrail import tools_requiring_approval
 from app.agent.memory import _as_text
 from app.agent.models import get_provider
+from app.agent.pricing import estimate_cost_usd
 from app.agent.retrieval import retrieve
 from app.agent.state import AgentState
+from app.core import metrics
+from app.core.telemetry import traced
 from app.models import KnowledgeBase, Run, User
 
 
+@traced("agent.node.approval_gate")
 async def approval_gate(state: AgentState) -> dict[str, object]:
     """Pause before any tools run and pair rejected calls with tool results."""
     last = state["messages"][-1]
@@ -53,6 +58,7 @@ async def approval_gate(state: AgentState) -> dict[str, object]:
     return {"messages": results}
 
 
+@traced("agent.node.execute_tools")
 async def execute_tools(
     state: AgentState, *, tools: list[StructuredTool]
 ) -> dict[str, object]:
@@ -112,10 +118,13 @@ async def execute_tools(
     return {"messages": list(results)}
 
 
+@traced("agent.node.call_model")
 async def call_model(
     state: AgentState, *, tools: list[StructuredTool] | None = None
 ) -> dict[str, object]:
     """Call the model without persisting the temporary system message."""
+    started = time.perf_counter()
+    label = metrics.model_label(state["llm_model"])
     messages: list[BaseMessage] = []
     if state["system_prompt"]:
         messages.append(SystemMessage(content=state["system_prompt"]))
@@ -142,12 +151,35 @@ async def call_model(
         response = await (chat.bind_tools(tools) if tools else chat).ainvoke(messages)
         if not isinstance(response, AIMessage):
             raise ModelCallError("Model did not return an AI message")
-    except AgentError:
+    except AgentError as exc:
+        metrics.llm_errors_total.labels(
+            model=label, error_type=type(exc).__name__
+        ).inc()
         raise
     except Exception as exc:
+        metrics.llm_errors_total.labels(
+            model=label, error_type=type(exc).__name__
+        ).inc()
         raise ModelCallError(str(exc)) from exc
+    finally:
+        metrics.llm_call_duration_seconds.labels(model=label).observe(
+            time.perf_counter() - started
+        )
 
     usage = response.usage_metadata
+    prompt_tokens = usage["input_tokens"] if usage else 0
+    completion_tokens = usage["output_tokens"] if usage else 0
+    metrics.llm_tokens_total.labels(model=label, kind="prompt").inc(prompt_tokens)
+    metrics.llm_tokens_total.labels(model=label, kind="completion").inc(
+        completion_tokens
+    )
+    cost = estimate_cost_usd(
+        model=state["llm_model"],
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+    )
+    if cost is not None:
+        metrics.llm_cost_usd_total.labels(model=label).inc(float(cost))
     return {
         "messages": [response],
         "iteration": state["iteration"] + 1,
@@ -158,9 +190,11 @@ async def call_model(
     }
 
 
+@traced("agent.node.retrieve_context")
 async def retrieve_context(
     state: AgentState, *, session_factory: Callable[[], AsyncSession]
 ) -> dict[str, object]:
+    started = time.perf_counter()
     ids = [uuid.UUID(value) for value in state.get("knowledge_base_ids", [])]
     query = next(
         (
@@ -185,6 +219,7 @@ async def retrieve_context(
             chunks = await retrieve(
                 session=session, knowledge_base_ids=allowed, query=query
             )
+            metrics.retrieval_results_count.observe(len(chunks))
             return {
                 "retrieved_chunks": [
                     {"index": i + 1, **chunk.model_dump(mode="json")}
@@ -196,3 +231,5 @@ async def retrieve_context(
             "Retrieval failed, continuing without context", exc_info=True
         )
         return {"retrieved_chunks": []}
+    finally:
+        metrics.retrieval_duration_seconds.observe(time.perf_counter() - started)

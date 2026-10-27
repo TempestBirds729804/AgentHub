@@ -1,9 +1,11 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    admin_monitoring,
     agents,
     approvals,
     conversations,
+    evals,
     knowledge,
     login,
     private,
@@ -15,6 +17,8 @@ from app.api.routes import (
 from app.core.config import settings
 
 api_router = APIRouter()
+api_router.include_router(admin_monitoring.router)
+api_router.include_router(evals.router)
 api_router.include_router(knowledge.router)
 api_router.include_router(approvals.router)
 api_router.include_router(tools.router)

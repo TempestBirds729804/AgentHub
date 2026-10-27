@@ -147,3 +147,29 @@ Application (frontend and API): `https://fastapi-project.example.com`
 Interactive API docs: `https://fastapi-project.example.com/docs`
 
 Adminer: `https://adminer.fastapi-project.example.com`
+# Optional local monitoring
+
+Enable the monitoring services explicitly with `docker compose --profile monitoring up -d`.
+Set `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317` in the ignored local `.env`
+and recreate backend/worker to enable traces; leave it empty when the collector is not running.
+Use a private `GRAFANA_PASSWORD`; the example password is for local development only.
+Local overrides bind Grafana (3000), Prometheus (9090), and OTLP (4317) to `127.0.0.1`.
+Deployment overrides publish none of these ports. Both HTTP and HTTPS backend proxy
+rules explicitly exclude `/metrics`; do not publish the backend/worker scrape ports directly.
+
+Prometheus scrapes API and worker separately and retains 15 days. Each application
+container has its own `/tmp/prometheus` tmpfs for multiprocess metrics; never share it
+between API and worker. Stop/start clears the tmpfs. Grafana provisions the exported
+`monitoring/grafana/dashboards/agenthub.json` without requiring a persistent Grafana database.
+Collector debug output contains trace metadata (no prompts/responses); Tempo and
+cross-queue trace propagation are not enabled. Inspect traces with `docker compose logs otel-collector`.
+
+Counters measure activity since process/container startup; use the admin Monitoring
+page for database-backed historical totals. Rate/quantile panels need at least two
+scrapes and relevant activity; no data is not a zero. Costs include known Run model
+prices only, exclude judge calls, and are estimates rather than supplier invoices.
+The admin page reports unknown cost when any included run has unknown pricing.
+LLM health checks configuration only, not paid provider connectivity. A failed Redis
+probe reports unknown queue depth without blocking database-backed statistics.
+Worker heartbeats refresh every 15 seconds. Compose restarts workers after an
+infrastructure failure; a missing heartbeat is reported as unavailable.

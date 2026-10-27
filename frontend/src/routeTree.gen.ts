@@ -18,12 +18,16 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutAgentsRouteImport } from './routes/_layout/agents'
 import { Route as LayoutApprovalsRouteImport } from './routes/_layout/approvals'
+import { Route as LayoutEvalsRouteImport } from './routes/_layout/evals'
 import { Route as LayoutKnowledgeRouteImport } from './routes/_layout/knowledge'
+import { Route as LayoutMonitoringRouteImport } from './routes/_layout/monitoring'
 import { Route as LayoutPlaygroundRouteImport } from './routes/_layout/playground'
 import { Route as LayoutRunsRouteImport } from './routes/_layout/runs'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutToolsRouteImport } from './routes/_layout/tools'
 import { Route as LayoutAgentsAgentIdRouteImport } from './routes/_layout/agents.$agentId'
+import { Route as LayoutEvalsEvalRunIdRouteImport } from './routes/_layout/evals.$evalRunId'
+import { Route as LayoutEvalsCompareRouteImport } from './routes/_layout/evals.compare'
 import { Route as LayoutKnowledgeKbIdRouteImport } from './routes/_layout/knowledge.$kbId'
 import { Route as LayoutRunsRunIdRouteImport } from './routes/_layout/runs.$runId'
 
@@ -71,9 +75,19 @@ const LayoutApprovalsRoute = LayoutApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutEvalsRoute = LayoutEvalsRouteImport.update({
+  id: '/evals',
+  path: '/evals',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutKnowledgeRoute = LayoutKnowledgeRouteImport.update({
   id: '/knowledge',
   path: '/knowledge',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutMonitoringRoute = LayoutMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutPlaygroundRoute = LayoutPlaygroundRouteImport.update({
@@ -101,6 +115,16 @@ const LayoutAgentsAgentIdRoute = LayoutAgentsAgentIdRouteImport.update({
   path: '/$agentId',
   getParentRoute: () => LayoutAgentsRoute,
 } as any)
+const LayoutEvalsEvalRunIdRoute = LayoutEvalsEvalRunIdRouteImport.update({
+  id: '/$evalRunId',
+  path: '/$evalRunId',
+  getParentRoute: () => LayoutEvalsRoute,
+} as any)
+const LayoutEvalsCompareRoute = LayoutEvalsCompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
+  getParentRoute: () => LayoutEvalsRoute,
+} as any)
 const LayoutKnowledgeKbIdRoute = LayoutKnowledgeKbIdRouteImport.update({
   id: '/$kbId',
   path: '/$kbId',
@@ -121,12 +145,16 @@ export interface FileRoutesByFullPath {
   '/admin': typeof LayoutAdminRoute
   '/agents': typeof LayoutAgentsRouteWithChildren
   '/approvals': typeof LayoutApprovalsRoute
+  '/evals': typeof LayoutEvalsRouteWithChildren
   '/knowledge': typeof LayoutKnowledgeRouteWithChildren
+  '/monitoring': typeof LayoutMonitoringRoute
   '/playground': typeof LayoutPlaygroundRoute
   '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/tools': typeof LayoutToolsRoute
   '/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/evals/$evalRunId': typeof LayoutEvalsEvalRunIdRoute
+  '/evals/compare': typeof LayoutEvalsCompareRoute
   '/knowledge/$kbId': typeof LayoutKnowledgeKbIdRoute
   '/runs/$runId': typeof LayoutRunsRunIdRoute
 }
@@ -138,13 +166,17 @@ export interface FileRoutesByTo {
   '/admin': typeof LayoutAdminRoute
   '/agents': typeof LayoutAgentsRouteWithChildren
   '/approvals': typeof LayoutApprovalsRoute
+  '/evals': typeof LayoutEvalsRouteWithChildren
   '/knowledge': typeof LayoutKnowledgeRouteWithChildren
+  '/monitoring': typeof LayoutMonitoringRoute
   '/playground': typeof LayoutPlaygroundRoute
   '/runs': typeof LayoutRunsRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
   '/tools': typeof LayoutToolsRoute
   '/': typeof LayoutIndexRoute
   '/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/evals/$evalRunId': typeof LayoutEvalsEvalRunIdRoute
+  '/evals/compare': typeof LayoutEvalsCompareRoute
   '/knowledge/$kbId': typeof LayoutKnowledgeKbIdRoute
   '/runs/$runId': typeof LayoutRunsRunIdRoute
 }
@@ -158,13 +190,17 @@ export interface FileRoutesById {
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/agents': typeof LayoutAgentsRouteWithChildren
   '/_layout/approvals': typeof LayoutApprovalsRoute
+  '/_layout/evals': typeof LayoutEvalsRouteWithChildren
   '/_layout/knowledge': typeof LayoutKnowledgeRouteWithChildren
+  '/_layout/monitoring': typeof LayoutMonitoringRoute
   '/_layout/playground': typeof LayoutPlaygroundRoute
   '/_layout/runs': typeof LayoutRunsRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/tools': typeof LayoutToolsRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/agents/$agentId': typeof LayoutAgentsAgentIdRoute
+  '/_layout/evals/$evalRunId': typeof LayoutEvalsEvalRunIdRoute
+  '/_layout/evals/compare': typeof LayoutEvalsCompareRoute
   '/_layout/knowledge/$kbId': typeof LayoutKnowledgeKbIdRoute
   '/_layout/runs/$runId': typeof LayoutRunsRunIdRoute
 }
@@ -179,12 +215,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/approvals'
+    | '/evals'
     | '/knowledge'
+    | '/monitoring'
     | '/playground'
     | '/runs'
     | '/settings'
     | '/tools'
     | '/agents/$agentId'
+    | '/evals/$evalRunId'
+    | '/evals/compare'
     | '/knowledge/$kbId'
     | '/runs/$runId'
   fileRoutesByTo: FileRoutesByTo
@@ -196,13 +236,17 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/approvals'
+    | '/evals'
     | '/knowledge'
+    | '/monitoring'
     | '/playground'
     | '/runs'
     | '/settings'
     | '/tools'
     | '/'
     | '/agents/$agentId'
+    | '/evals/$evalRunId'
+    | '/evals/compare'
     | '/knowledge/$kbId'
     | '/runs/$runId'
   id:
@@ -215,13 +259,17 @@ export interface FileRouteTypes {
     | '/_layout/admin'
     | '/_layout/agents'
     | '/_layout/approvals'
+    | '/_layout/evals'
     | '/_layout/knowledge'
+    | '/_layout/monitoring'
     | '/_layout/playground'
     | '/_layout/runs'
     | '/_layout/settings'
     | '/_layout/tools'
     | '/_layout/'
     | '/_layout/agents/$agentId'
+    | '/_layout/evals/$evalRunId'
+    | '/_layout/evals/compare'
     | '/_layout/knowledge/$kbId'
     | '/_layout/runs/$runId'
   fileRoutesById: FileRoutesById
@@ -299,11 +347,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutApprovalsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/evals': {
+      id: '/_layout/evals'
+      path: '/evals'
+      fullPath: '/evals'
+      preLoaderRoute: typeof LayoutEvalsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/knowledge': {
       id: '/_layout/knowledge'
       path: '/knowledge'
       fullPath: '/knowledge'
       preLoaderRoute: typeof LayoutKnowledgeRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/monitoring': {
+      id: '/_layout/monitoring'
+      path: '/monitoring'
+      fullPath: '/monitoring'
+      preLoaderRoute: typeof LayoutMonitoringRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/playground': {
@@ -341,6 +403,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAgentsAgentIdRouteImport
       parentRoute: typeof LayoutAgentsRoute
     }
+    '/_layout/evals/$evalRunId': {
+      id: '/_layout/evals/$evalRunId'
+      path: '/$evalRunId'
+      fullPath: '/evals/$evalRunId'
+      preLoaderRoute: typeof LayoutEvalsEvalRunIdRouteImport
+      parentRoute: typeof LayoutEvalsRoute
+    }
+    '/_layout/evals/compare': {
+      id: '/_layout/evals/compare'
+      path: '/compare'
+      fullPath: '/evals/compare'
+      preLoaderRoute: typeof LayoutEvalsCompareRouteImport
+      parentRoute: typeof LayoutEvalsRoute
+    }
     '/_layout/knowledge/$kbId': {
       id: '/_layout/knowledge/$kbId'
       path: '/$kbId'
@@ -368,6 +444,20 @@ const LayoutAgentsRouteChildren: LayoutAgentsRouteChildren = {
 
 const LayoutAgentsRouteWithChildren = LayoutAgentsRoute._addFileChildren(
   LayoutAgentsRouteChildren,
+)
+
+interface LayoutEvalsRouteChildren {
+  LayoutEvalsEvalRunIdRoute: typeof LayoutEvalsEvalRunIdRoute
+  LayoutEvalsCompareRoute: typeof LayoutEvalsCompareRoute
+}
+
+const LayoutEvalsRouteChildren: LayoutEvalsRouteChildren = {
+  LayoutEvalsEvalRunIdRoute: LayoutEvalsEvalRunIdRoute,
+  LayoutEvalsCompareRoute: LayoutEvalsCompareRoute,
+}
+
+const LayoutEvalsRouteWithChildren = LayoutEvalsRoute._addFileChildren(
+  LayoutEvalsRouteChildren,
 )
 
 interface LayoutKnowledgeRouteChildren {
@@ -398,7 +488,9 @@ interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutAgentsRoute: typeof LayoutAgentsRouteWithChildren
   LayoutApprovalsRoute: typeof LayoutApprovalsRoute
+  LayoutEvalsRoute: typeof LayoutEvalsRouteWithChildren
   LayoutKnowledgeRoute: typeof LayoutKnowledgeRouteWithChildren
+  LayoutMonitoringRoute: typeof LayoutMonitoringRoute
   LayoutPlaygroundRoute: typeof LayoutPlaygroundRoute
   LayoutRunsRoute: typeof LayoutRunsRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -410,7 +502,9 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutAgentsRoute: LayoutAgentsRouteWithChildren,
   LayoutApprovalsRoute: LayoutApprovalsRoute,
+  LayoutEvalsRoute: LayoutEvalsRouteWithChildren,
   LayoutKnowledgeRoute: LayoutKnowledgeRouteWithChildren,
+  LayoutMonitoringRoute: LayoutMonitoringRoute,
   LayoutPlaygroundRoute: LayoutPlaygroundRoute,
   LayoutRunsRoute: LayoutRunsRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,

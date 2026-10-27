@@ -62,7 +62,7 @@ services:
       FRONTEND_HOST: https://${DOMAIN:?Variable not set}
     labels:
       # Route HTTPS traffic for this domain
-      - traefik.http.routers.backend-https.rule=Host(`${DOMAIN:?Variable not set}`)
+      - traefik.http.routers.backend-https.rule=Host(`${DOMAIN:?Variable not set}`) && !PathPrefix(`/metrics`)
       - traefik.http.routers.backend-https.entrypoints=https
       - traefik.http.routers.backend-https.tls=true
       # Use the Let's Encrypt resolver

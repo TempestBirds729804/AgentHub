@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "gpt-4o-mini"
     LLM_TIMEOUT_SECONDS: int = 120
     LLM_MAX_RETRIES: int = 2
+    EVAL_JUDGE_MODEL: str = ""
+    EVAL_CONCURRENCY: int = 3
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
+    PROJECT_VERSION: str = "0.1.0"
+    WORKER_METRICS_PORT: int = 0
 
     # --- Embedding ---
     EMBEDDING_MODEL: str = "qwen3-vl-embedding"

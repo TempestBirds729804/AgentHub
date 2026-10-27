@@ -20,6 +20,7 @@ from app.agent.memory import _as_text, build_context_messages, from_langchain_me
 from app.agent.pricing import estimate_cost_usd
 from app.agent.snapshot import AgentSnapshot
 from app.agent.state import AgentState
+from app.core.metrics import observe_run, observe_stream
 from app.core.redis import get_redis
 from app.models import (
     AgentVersion,
@@ -42,6 +43,7 @@ KNOWN_NODE_NAMES = {"call_model", "execute_tools", "approval_gate", "retrieve_co
 logger = logging.getLogger(__name__)
 
 
+@observe_run
 async def execute_run_with_checkpoint(
     *, session: AsyncSession, run: Run, publisher: RedisEventPublisher
 ) -> Run:
@@ -563,6 +565,7 @@ async def _fail_run(
     await session.refresh(run)
 
 
+@observe_run
 async def execute_run(
     *,
     session: AsyncSession,
@@ -703,6 +706,7 @@ async def _cancel_run(*, session: AsyncSession, run: Run) -> None:
         await session.refresh(run)
 
 
+@observe_stream
 async def stream_run(
     *,
     session: AsyncSession,

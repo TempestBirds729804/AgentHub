@@ -3,6 +3,7 @@ import {
   Activity,
   BookOpen,
   Bot,
+  FlaskConical,
   Home,
   MessageSquare,
   ShieldCheck,
@@ -30,6 +31,7 @@ const baseItems: Item[] = [
   { icon: Wrench, title: "Tools", path: "/tools" },
   { icon: MessageSquare, title: "Playground", path: "/playground" },
   { icon: Activity, title: "Runs", path: "/runs" },
+  { icon: FlaskConical, title: "Evaluations", path: "/evals" },
 ]
 
 export function AppSidebar() {
@@ -55,7 +57,11 @@ export function AppSidebar() {
   ]
 
   const items = currentUser?.is_superuser
-    ? [...navigation, { icon: Users, title: "Admin", path: "/admin" }]
+    ? [
+        ...navigation,
+        { icon: Users, title: "Admin", path: "/admin" },
+        { icon: Activity, title: "Monitoring", path: "/monitoring" },
+      ]
     : navigation
 
   return (

@@ -9,6 +9,8 @@ from referencing import Registry
 
 from app.agent.tools.base import ToolResult
 from app.agent.tools.registry import get_executor
+from app.core import metrics
+from app.core.telemetry import get_tracer
 from app.models.tool import Tool
 
 
@@ -46,10 +48,39 @@ def to_langchain_tool(
     tool: Tool, *, config_override: dict[str, Any] | None = None
 ) -> StructuredTool:
     async def run(**kwargs: Any) -> tuple[str, dict[str, Any]]:
+        started = time.perf_counter()
+        kind = str(getattr(tool.tool_type, "value", tool.tool_type))
+        outcome = "error"
         try:
-            result = await execute_tool(
-                tool, arguments=kwargs, config_override=config_override
-            )
+            with get_tracer().start_as_current_span(
+                f"agent.tool.{kind}", record_exception=False
+            ) as span:
+                span.set_attribute("agenthub.tool_type", kind)
+                span.set_attribute("agenthub.tool_name", tool.name[:64])
+                result = await execute_tool(
+                    tool, arguments=kwargs, config_override=config_override
+                )
+                outcome = (
+                    "ok"
+                    if result.ok
+                    else "timeout"
+                    if "timeout" in (result.error or "").lower()
+                    or "timed out" in (result.error or "").lower()
+                    else "error"
+                )
+                if kind == "mcp" and outcome == "error":
+                    error = result.error or ""
+                    outcome = (
+                        "protocol_error"
+                        if "McpError" in error
+                        or "HTTP " in error
+                        or "ValidationError" in error
+                        else "connection_error"
+                        if error.startswith("MCP request failed")
+                        or "connection closed" in error
+                        else "tool_error"
+                    )
+                span.set_attribute("agenthub.outcome", outcome)
             return (
                 result.content
                 if result.ok
@@ -61,6 +92,11 @@ def to_langchain_tool(
                 "ok": False,
                 "error": str(exc)[:1000],
             }
+        finally:
+            metrics.tool_calls_total.labels(tool_type=kind, outcome=outcome).inc()
+            metrics.tool_duration_seconds.labels(tool_type=kind).observe(
+                time.perf_counter() - started
+            )
 
     return StructuredTool(
         name=tool.name,

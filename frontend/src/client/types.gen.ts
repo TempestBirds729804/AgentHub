@@ -413,6 +413,28 @@ export type BuiltinFunctionsPublic = {
 };
 
 /**
+ * ComponentStatus
+ */
+export type ComponentStatus = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Healthy
+     */
+    healthy: boolean;
+    /**
+     * Detail
+     */
+    detail: string;
+    /**
+     * Latency Ms
+     */
+    latency_ms: number;
+};
+
+/**
  * ConvMessagePublic
  */
 export type ConvMessagePublic = {
@@ -614,6 +636,432 @@ export type DocumentsPublic = {
 };
 
 /**
+ * EvalCaseCreate
+ */
+export type EvalCaseCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Input
+     */
+    input?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Expected Output
+     */
+    expected_output?: string | null;
+    /**
+     * Assertions
+     */
+    assertions?: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+};
+
+/**
+ * EvalCasePublic
+ */
+export type EvalCasePublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Input
+     */
+    input?: {
+        [key: string]: unknown;
+    };
+    /**
+     * Expected Output
+     */
+    expected_output?: string | null;
+    /**
+     * Assertions
+     */
+    assertions?: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Tags
+     */
+    tags?: Array<string>;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Agent Id
+     */
+    agent_id: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Updated At
+     */
+    updated_at?: string | null;
+};
+
+/**
+ * EvalCaseUpdate
+ */
+export type EvalCaseUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Input
+     */
+    input?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Expected Output
+     */
+    expected_output?: string | null;
+    /**
+     * Assertions
+     */
+    assertions?: Array<{
+        [key: string]: unknown;
+    }> | null;
+    /**
+     * Tags
+     */
+    tags?: Array<string> | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+};
+
+/**
+ * EvalCasesPublic
+ */
+export type EvalCasesPublic = {
+    /**
+     * Data
+     */
+    data: Array<EvalCasePublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * EvalComparisonItem
+ */
+export type EvalComparisonItem = {
+    /**
+     * Case Id
+     */
+    case_id: string;
+    /**
+     * Case Name
+     */
+    case_name: string;
+    left?: EvalResultPublic | null;
+    right?: EvalResultPublic | null;
+    /**
+     * Verdict
+     */
+    verdict: string;
+};
+
+/**
+ * EvalComparisonPublic
+ */
+export type EvalComparisonPublic = {
+    left: EvalRunPublic;
+    right: EvalRunPublic;
+    /**
+     * Items
+     */
+    items: Array<EvalComparisonItem>;
+    /**
+     * Regression Count
+     */
+    regression_count: number;
+    /**
+     * Improvement Count
+     */
+    improvement_count: number;
+};
+
+/**
+ * EvalResultPublic
+ */
+export type EvalResultPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Eval Run Id
+     */
+    eval_run_id: string;
+    /**
+     * Eval Case Id
+     */
+    eval_case_id: string;
+    /**
+     * Run Id
+     */
+    run_id?: string | null;
+    /**
+     * Passed
+     */
+    passed: boolean;
+    /**
+     * Score
+     */
+    score?: number | null;
+    /**
+     * Actual Output
+     */
+    actual_output?: string | null;
+    /**
+     * Assertion Results
+     */
+    assertion_results: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Error
+     */
+    error?: string | null;
+    /**
+     * Duration Ms
+     */
+    duration_ms?: number | null;
+    /**
+     * Prompt Tokens
+     */
+    prompt_tokens: number;
+    /**
+     * Completion Tokens
+     */
+    completion_tokens: number;
+    /**
+     * Cost Usd
+     */
+    cost_usd?: string | null;
+    /**
+     * Case Name
+     */
+    case_name?: string | null;
+};
+
+/**
+ * EvalResultsPublic
+ */
+export type EvalResultsPublic = {
+    /**
+     * Data
+     */
+    data: Array<EvalResultPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * EvalRunCreate
+ */
+export type EvalRunCreate = {
+    /**
+     * Agent Version Id
+     */
+    agent_version_id: string;
+    /**
+     * Case Ids
+     */
+    case_ids?: Array<string> | null;
+    /**
+     * Tags
+     */
+    tags?: Array<string> | null;
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
+ * EvalRunPublic
+ */
+export type EvalRunPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Agent Version Id
+     */
+    agent_version_id: string;
+    /**
+     * Note
+     */
+    note?: string | null;
+    status: EvalRunStatus;
+    /**
+     * Error
+     */
+    error?: string | null;
+    /**
+     * Case Count
+     */
+    case_count: number;
+    /**
+     * Completed Count
+     */
+    completed_count: number;
+    /**
+     * Passed Count
+     */
+    passed_count: number;
+    /**
+     * Avg Duration Ms
+     */
+    avg_duration_ms?: number | null;
+    /**
+     * P95 Duration Ms
+     */
+    p95_duration_ms?: number | null;
+    /**
+     * Total Cost Usd
+     */
+    total_cost_usd?: string | null;
+    /**
+     * Total Prompt Tokens
+     */
+    total_prompt_tokens: number;
+    /**
+     * Total Completion Tokens
+     */
+    total_completion_tokens: number;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Started At
+     */
+    started_at?: string | null;
+    /**
+     * Finished At
+     */
+    finished_at?: string | null;
+    /**
+     * Agent Name
+     */
+    agent_name?: string | null;
+    /**
+     * Agent Version Number
+     */
+    agent_version_number?: number | null;
+    /**
+     * Pass Rate
+     */
+    pass_rate?: number | null;
+};
+
+/**
+ * EvalRunStatus
+ */
+export type EvalRunStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+
+/**
+ * EvalRunsPublic
+ */
+export type EvalRunsPublic = {
+    /**
+     * Data
+     */
+    data: Array<EvalRunPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * FailurePublic
+ */
+export type FailurePublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Agent Name
+     */
+    agent_name: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Error
+     */
+    error: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * FailuresPublic
+ */
+export type FailuresPublic = {
+    /**
+     * Data
+     */
+    data: Array<FailurePublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * HTTPValidationError
  */
 export type HTTPValidationError = {
@@ -737,6 +1185,56 @@ export type Message = {
  * MessageRole
  */
 export type MessageRole = 'user' | 'assistant' | 'tool' | 'system';
+
+/**
+ * MonitoringOverview
+ */
+export type MonitoringOverview = {
+    /**
+     * Total Users
+     */
+    total_users: number;
+    /**
+     * Active Users 7D
+     */
+    active_users_7d: number;
+    /**
+     * Total Agents
+     */
+    total_agents: number;
+    /**
+     * Total Runs
+     */
+    total_runs: number;
+    /**
+     * Runs 24H
+     */
+    runs_24h: number;
+    /**
+     * Success Rate 24H
+     */
+    success_rate_24h: number | null;
+    /**
+     * Avg Duration Ms 24H
+     */
+    avg_duration_ms_24h: number | null;
+    /**
+     * Total Cost Usd 30D
+     */
+    total_cost_usd_30d: string | null;
+    /**
+     * Total Tokens 30D
+     */
+    total_tokens_30d: number;
+    /**
+     * Pending Approvals
+     */
+    pending_approvals: number;
+    /**
+     * Documents Processing
+     */
+    documents_processing: number;
+};
 
 /**
  * NewPassword
@@ -1028,6 +1526,20 @@ export type StreamMessageRequest = {
 };
 
 /**
+ * SystemStatus
+ */
+export type SystemStatus = {
+    /**
+     * Components
+     */
+    components: Array<ComponentStatus>;
+    /**
+     * Queue Depth
+     */
+    queue_depth: number | null;
+};
+
+/**
  * Token
  */
 export type Token = {
@@ -1241,6 +1753,42 @@ export type UpdatePassword = {
 };
 
 /**
+ * UsageDay
+ */
+export type UsageDay = {
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Runs
+     */
+    runs: number;
+    /**
+     * Tokens
+     */
+    tokens: number;
+    /**
+     * Cost
+     */
+    cost: string | null;
+};
+
+/**
+ * UsagePublic
+ */
+export type UsagePublic = {
+    /**
+     * Data
+     */
+    data: Array<UsageDay>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * UserCreate
  */
 export type UserCreate = {
@@ -1355,6 +1903,32 @@ export type UserUpdateMe = {
 };
 
 /**
+ * UserUsage
+ */
+export type UserUsage = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Runs
+     */
+    runs: number;
+    /**
+     * Tokens
+     */
+    tokens: number;
+    /**
+     * Cost
+     */
+    cost: string | null;
+};
+
+/**
  * UsersPublic
  */
 export type UsersPublic = {
@@ -1362,6 +1936,20 @@ export type UsersPublic = {
      * Data
      */
     data: Array<UserPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * UsersUsagePublic
+ */
+export type UsersUsagePublic = {
+    /**
+     * Data
+     */
+    data: Array<UserUsage>;
     /**
      * Count
      */
@@ -1395,6 +1983,501 @@ export type ValidationError = {
         [key: string]: unknown;
     };
 };
+
+export type monitoringReadOverviewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/monitoring/overview';
+};
+
+export type monitoringReadOverviewResponses = {
+    /**
+     * Successful Response
+     */
+    200: MonitoringOverview;
+};
+
+export type monitoringReadOverviewResponse = monitoringReadOverviewResponses[keyof monitoringReadOverviewResponses];
+
+export type monitoringReadUsageData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Days
+         */
+        days?: number;
+    };
+    url: '/api/v1/monitoring/usage';
+};
+
+export type monitoringReadUsageErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type monitoringReadUsageError = monitoringReadUsageErrors[keyof monitoringReadUsageErrors];
+
+export type monitoringReadUsageResponses = {
+    /**
+     * Successful Response
+     */
+    200: UsagePublic;
+};
+
+export type monitoringReadUsageResponse = monitoringReadUsageResponses[keyof monitoringReadUsageResponses];
+
+export type monitoringReadTopUsersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/monitoring/top-users';
+};
+
+export type monitoringReadTopUsersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type monitoringReadTopUsersError = monitoringReadTopUsersErrors[keyof monitoringReadTopUsersErrors];
+
+export type monitoringReadTopUsersResponses = {
+    /**
+     * Successful Response
+     */
+    200: UsersUsagePublic;
+};
+
+export type monitoringReadTopUsersResponse = monitoringReadTopUsersResponses[keyof monitoringReadTopUsersResponses];
+
+export type monitoringReadRecentFailuresData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/monitoring/recent-failures';
+};
+
+export type monitoringReadRecentFailuresResponses = {
+    /**
+     * Successful Response
+     */
+    200: FailuresPublic;
+};
+
+export type monitoringReadRecentFailuresResponse = monitoringReadRecentFailuresResponses[keyof monitoringReadRecentFailuresResponses];
+
+export type monitoringReadSystemData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/monitoring/system';
+};
+
+export type monitoringReadSystemResponses = {
+    /**
+     * Successful Response
+     */
+    200: SystemStatus;
+};
+
+export type monitoringReadSystemResponse = monitoringReadSystemResponses[keyof monitoringReadSystemResponses];
+
+export type evalsReadCasesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Agent Id
+         */
+        agent_id: string;
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/evals/cases';
+};
+
+export type evalsReadCasesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsReadCasesError = evalsReadCasesErrors[keyof evalsReadCasesErrors];
+
+export type evalsReadCasesResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalCasesPublic;
+};
+
+export type evalsReadCasesResponse = evalsReadCasesResponses[keyof evalsReadCasesResponses];
+
+export type evalsCreateCaseData = {
+    body: EvalCaseCreate;
+    path?: never;
+    query: {
+        /**
+         * Agent Id
+         */
+        agent_id: string;
+    };
+    url: '/api/v1/evals/cases';
+};
+
+export type evalsCreateCaseErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsCreateCaseError = evalsCreateCaseErrors[keyof evalsCreateCaseErrors];
+
+export type evalsCreateCaseResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalCasePublic;
+};
+
+export type evalsCreateCaseResponse = evalsCreateCaseResponses[keyof evalsCreateCaseResponses];
+
+export type evalsImportCasesData = {
+    /**
+     * Cases In
+     */
+    body: Array<EvalCaseCreate>;
+    path?: never;
+    query: {
+        /**
+         * Agent Id
+         */
+        agent_id: string;
+    };
+    url: '/api/v1/evals/cases/import';
+};
+
+export type evalsImportCasesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsImportCasesError = evalsImportCasesErrors[keyof evalsImportCasesErrors];
+
+export type evalsImportCasesResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalCasesPublic;
+};
+
+export type evalsImportCasesResponse = evalsImportCasesResponses[keyof evalsImportCasesResponses];
+
+export type evalsDeleteCaseData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/evals/cases/{id}';
+};
+
+export type evalsDeleteCaseErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsDeleteCaseError = evalsDeleteCaseErrors[keyof evalsDeleteCaseErrors];
+
+export type evalsDeleteCaseResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type evalsDeleteCaseResponse = evalsDeleteCaseResponses[keyof evalsDeleteCaseResponses];
+
+export type evalsReadCaseData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/evals/cases/{id}';
+};
+
+export type evalsReadCaseErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsReadCaseError = evalsReadCaseErrors[keyof evalsReadCaseErrors];
+
+export type evalsReadCaseResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalCasePublic;
+};
+
+export type evalsReadCaseResponse = evalsReadCaseResponses[keyof evalsReadCaseResponses];
+
+export type evalsUpdateCaseData = {
+    body: EvalCaseUpdate;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/evals/cases/{id}';
+};
+
+export type evalsUpdateCaseErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsUpdateCaseError = evalsUpdateCaseErrors[keyof evalsUpdateCaseErrors];
+
+export type evalsUpdateCaseResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalCasePublic;
+};
+
+export type evalsUpdateCaseResponse = evalsUpdateCaseResponses[keyof evalsUpdateCaseResponses];
+
+export type evalsReadEvalRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Agent Id
+         */
+        agent_id?: string | null;
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/evals/runs';
+};
+
+export type evalsReadEvalRunsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsReadEvalRunsError = evalsReadEvalRunsErrors[keyof evalsReadEvalRunsErrors];
+
+export type evalsReadEvalRunsResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalRunsPublic;
+};
+
+export type evalsReadEvalRunsResponse = evalsReadEvalRunsResponses[keyof evalsReadEvalRunsResponses];
+
+export type evalsCreateEvalRunData = {
+    body: EvalRunCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/evals/runs';
+};
+
+export type evalsCreateEvalRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsCreateEvalRunError = evalsCreateEvalRunErrors[keyof evalsCreateEvalRunErrors];
+
+export type evalsCreateEvalRunResponses = {
+    /**
+     * Successful Response
+     */
+    202: EvalRunPublic;
+};
+
+export type evalsCreateEvalRunResponse = evalsCreateEvalRunResponses[keyof evalsCreateEvalRunResponses];
+
+export type evalsReadEvalRunData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/evals/runs/{id}';
+};
+
+export type evalsReadEvalRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsReadEvalRunError = evalsReadEvalRunErrors[keyof evalsReadEvalRunErrors];
+
+export type evalsReadEvalRunResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalRunPublic;
+};
+
+export type evalsReadEvalRunResponse = evalsReadEvalRunResponses[keyof evalsReadEvalRunResponses];
+
+export type evalsReadResultsData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/evals/runs/{id}/results';
+};
+
+export type evalsReadResultsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsReadResultsError = evalsReadResultsErrors[keyof evalsReadResultsErrors];
+
+export type evalsReadResultsResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalResultsPublic;
+};
+
+export type evalsReadResultsResponse = evalsReadResultsResponses[keyof evalsReadResultsResponses];
+
+export type evalsCancelEvalRunData = {
+    body?: never;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/evals/runs/{id}/cancel';
+};
+
+export type evalsCancelEvalRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsCancelEvalRunError = evalsCancelEvalRunErrors[keyof evalsCancelEvalRunErrors];
+
+export type evalsCancelEvalRunResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalRunPublic;
+};
+
+export type evalsCancelEvalRunResponse = evalsCancelEvalRunResponses[keyof evalsCancelEvalRunResponses];
+
+export type evalsCompareEvalRunsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Left Id
+         */
+        left_id: string;
+        /**
+         * Right Id
+         */
+        right_id: string;
+    };
+    url: '/api/v1/evals/compare';
+};
+
+export type evalsCompareEvalRunsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type evalsCompareEvalRunsError = evalsCompareEvalRunsErrors[keyof evalsCompareEvalRunsErrors];
+
+export type evalsCompareEvalRunsResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalComparisonPublic;
+};
+
+export type evalsCompareEvalRunsResponse = evalsCompareEvalRunsResponses[keyof evalsCompareEvalRunsResponses];
 
 export type knowledgeReadKnowledgeBasesData = {
     body?: never;

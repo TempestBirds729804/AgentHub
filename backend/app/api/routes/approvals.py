@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import col, func, select
 
 from app.api.deps import AsyncSessionDep, CurrentUser, SessionDep
+from app.core.metrics import approvals_total
 from app.core.redis import get_redis
 from app.models import (
     Agent,
@@ -150,6 +151,9 @@ async def decide_approval(
         session.add(run)
     await session.commit()
     await session.refresh(request)
+    approvals_total.labels(
+        decision="approved" if decision.approved else "rejected"
+    ).inc()
     if pending is None:
         try:
             pool = await get_arq_pool()

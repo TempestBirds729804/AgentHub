@@ -16,15 +16,18 @@ from app.core.config import settings
 from app.core.db import engine, init_db
 from app.main import app
 from app.models import (
-    Chunk,
-    Document,
-    KnowledgeBase,
     Agent,
     AgentToolBinding,
     AgentVersion,
     ApprovalRequest,
+    Chunk,
     Conversation,
     ConvMessage,
+    Document,
+    EvalCase,
+    EvalResult,
+    EvalRun,
+    KnowledgeBase,
     Run,
     RunEvent,
     Tool,
@@ -57,6 +60,9 @@ def db() -> Generator[Session]:
         init_db(session)
         yield session
         for model in (
+            EvalResult,
+            EvalRun,
+            EvalCase,
             Chunk,
             Document,
             KnowledgeBase,
