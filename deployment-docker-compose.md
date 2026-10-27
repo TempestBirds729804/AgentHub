@@ -1,6 +1,8 @@
-# FastAPI Project - Docker Compose Deployment
+# AgentHub - Docker Compose Deployment
 
 You can deploy the project to your own remote server with Docker Compose. The deployment configuration includes Traefik to handle HTTPS and route incoming traffic to the application.
+
+This is the full-platform deployment path: PostgreSQL/pgvector, Redis, MinIO, API/frontend, arq worker and the read-only MCP service. The FastAPI Cloud workflow deploys only the API and is opt-in.
 
 ## Preparation
 
@@ -24,8 +26,10 @@ Set the application domain, project name, and first superuser email:
 
 ```bash
 export DOMAIN=fastapi-project.example.com
-export PROJECT_NAME="Full Stack FastAPI Project"
+export PROJECT_NAME="AgentHub"
 export FIRST_SUPERUSER=admin@example.com
+export COMPOSE_PROJECT_NAME=agenthub
+export COMPOSE_ENV_FILES=/dev/null
 ```
 
 You can also configure these environment variables as needed:
@@ -47,13 +51,19 @@ export FIRST_SUPERUSER_PASSWORD="$(python -c 'import secrets; print(secrets.toke
 
 To use an authenticated email provider, also set `SMTP_PASSWORD`.
 
+Also set `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `LLM_API_KEY` and `EMBEDDING_API_KEY` from your secret store. Do not use `changethis` or `minioadmin` in production. Configure `LLM_BASE_URL`/`LLM_MODEL` for your OpenAI-compatible provider; configure `EMBEDDING_BASE_URL`/`EMBEDDING_MODEL` for DashScope, retaining the migrated 1536 dimensions. `S3_BUCKET` defaults to `agenthub`.
+
+The ignored root `.env` is for local development only. `COMPOSE_ENV_FILES=/dev/null` prevents accidentally loading it on the deployment host. Environment variables must be present for every Compose command. Preserve the existing Compose project name and database/S3 credentials when updating an existing deployment: changing environment passwords does not migrate stored database users or storage credentials. Never run `down -v` on production data.
+
 ## Deploy
 
 ```bash
 cd /root/code/app/
 docker compose -f compose.yml -f compose.deploy.yml build
 docker compose -f compose.yml -f compose.deploy.yml run --rm backend bash scripts/prestart.sh
-docker compose -f compose.yml -f compose.deploy.yml up -d
+docker compose -f compose.yml -f compose.deploy.yml up -d --wait --wait-timeout 180
+docker compose -f compose.yml -f compose.deploy.yml exec -T backend alembic check
+docker compose -f compose.yml -f compose.deploy.yml exec -T backend curl --fail http://localhost:8000/
 ```
 
 The `compose.deploy.yml` file adds HTTPS and automatic certificate handling to the shared `compose.yml` configuration. Explicitly listing both files excludes the local settings from `compose.override.yml`.
@@ -74,6 +84,8 @@ In the repository, go to **Settings** > **Secrets and variables** > **Actions** 
 * `PROJECT_NAME`
 * `FIRST_SUPERUSER`
 
+Optional variables: `COMPOSE_PROJECT_NAME` (keep stable; defaults to `agenthub`), `LLM_BASE_URL`, `LLM_MODEL`, `EMBEDDING_BASE_URL`, `EMBEDDING_MODEL`, `S3_BUCKET`.
+
 To enable emails, add these optional repository variables:
 
 * `SMTP_HOST`
@@ -87,6 +99,12 @@ Add these repository secrets:
 * `POSTGRES_PASSWORD`
 * `SECRET_KEY`
 * `FIRST_SUPERUSER_PASSWORD`
+* `S3_ACCESS_KEY`
+* `S3_SECRET_KEY`
+* `LLM_API_KEY`
+* `EMBEDDING_API_KEY`
+
+Configure the `production` GitHub environment and its runner access/review rules. The workflow validates required values before building, applies migrations and storage/checkpoint setup, waits for all service health checks, and verifies schema and frontend. Repository or environment secrets are injected without printing their values. No workflow performs an automatic production volume reset.
 
 To use an authenticated email provider, add the optional `SMTP_PASSWORD` repository secret.
 

@@ -2,6 +2,8 @@
 
 ## Local Development
 
+Before the first run, copy `.env.example` to `.env` if `.env` does not already exist. Keep real credentials only in the ignored `.env`; do not overwrite an existing local configuration. CI copies the example and uses no paid model credentials.
+
 For local development, run PostgreSQL and Mailpit with Docker Compose, and run the FastAPI and Vite development servers locally.
 
 Start the supporting services:

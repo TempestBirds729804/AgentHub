@@ -1,4 +1,9 @@
 .git
+**/.env
+**/.env.*
+embedding_API_info.txt
+**/.coverage*
+**/playwright/.auth
 **/__pycache__
 **/.venv
 backend/htmlcov

@@ -115,12 +115,10 @@ test("submit async and replay real MCP progress after reopening Run details", as
           e.event_type === "tool_result" && e.payload.ok,
       ),
     ).toHaveLength(2)
-    await test
-      .info()
-      .attach("async-run.json", {
-        body: JSON.stringify({ run: detail, events: events.data }, null, 2),
-        contentType: "application/json",
-      })
+    await test.info().attach("async-run.json", {
+      body: JSON.stringify({ run: detail, events: events.data }, null, 2),
+      contentType: "application/json",
+    })
     await page.screenshot({
       path: test.info().outputPath("async-finished.png"),
       fullPage: true,

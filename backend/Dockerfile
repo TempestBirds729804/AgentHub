@@ -1,13 +1,14 @@
-FROM oven/bun:1 AS frontend-build
+FROM oven/bun:1.3.12 AS frontend-build
 
 WORKDIR /app
 
 COPY package.json bun.lock /app/
 COPY frontend/package.json /app/frontend/
+COPY packages/react-email/package.json /app/packages/react-email/
 
 WORKDIR /app/frontend
 
-RUN bun install
+RUN bun install --frozen-lockfile
 
 COPY ./frontend /app/frontend
 

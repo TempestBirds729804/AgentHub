@@ -26,7 +26,7 @@ AgentHub/
 ├── docs/dev/                  # 开发指导文档（00 总览 + 01-10 阶段任务）
 ├── pyproject.toml             # uv workspace 根，members = ["backend"]
 ├── package.json               # bun workspace 根，workspaces = ["frontend", "packages/*"]
-├── .env                       # 本地开发配置（已被 git 跟踪，不放部署密钥）
+├── .env.example               # 可提交的开发默认值；复制为被忽略的 .env，真实凭据只放本地或部署 Secrets
 ├── .python-version            # 3.14
 ├── compose.yml                # 共享服务定义
 ├── compose.override.yml       # 本地开发覆盖（自动加载）

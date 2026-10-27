@@ -56,7 +56,9 @@ jobs:
             pyproject.toml
             uv.lock
       - name: Install backend dependencies
-        run: uv sync --all-packages
+        run: uv sync --all-packages --locked
+      - name: Configure development defaults for OpenAPI generation
+        run: cp .env.example .env
       - name: Install frontend dependencies
         run: bun ci
       - name: Run prek - pre-commit

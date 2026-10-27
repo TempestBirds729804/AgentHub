@@ -4,6 +4,9 @@ on:
   push:
     branches:
     - master
+    - main
+    - 'feature/**'
+    - 'codex/**'
   pull_request:
   workflow_dispatch:
     inputs:
@@ -35,14 +38,16 @@ jobs:
           changed:
             - backend/**
             - frontend/**
-            - .env
+            - .env.example
+            - bun.lock
+            - uv.lock
             - compose*.yml
             - .github/workflows/playwright.yml
 
   test-playwright:
     needs:
       - changes
-    if: ${{ needs.changes.outputs.changed == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.changed == 'true' }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
     strategy:
@@ -71,17 +76,23 @@ jobs:
         # Before upgrading uv version, make sure astral-sh/setup-uv knows its checksum.
         # See: https://github.com/astral-sh/setup-uv/issues/851#issuecomment-4282017837
         version: "0.11.18"
-    - run: uv sync
+    - run: cp .env.example .env
+    - run: uv sync --locked
       working-directory: backend
     - run: bun ci
       working-directory: frontend
+    - name: Check frontend without rewriting sources
+      run: bunx biome check --no-errors-on-unmatched --files-ignore-unknown=true ./
+      working-directory: frontend
     - run: bash scripts/generate-client.sh
     - run: docker compose build
-    - run: docker compose down -v --remove-orphans
     - run: docker compose run --rm backend bash scripts/prestart.sh
+    - run: docker compose up -d --wait backend worker mcp-docs mailpit
     - name: Run Playwright tests
       run: docker compose run --rm playwright bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-    - run: docker compose down -v --remove-orphans
+    - name: Stop CI services
+      if: always()
+      run: docker compose down -v --remove-orphans
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -96,7 +107,7 @@ jobs:
       - test-playwright
       - changes
     # Merge reports after playwright-tests, even if some shards have failed
-    if: ${{ !cancelled() && needs.changes.outputs.changed == 'true' }}
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.changed == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

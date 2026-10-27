@@ -161,6 +161,8 @@ services:
         restart: true
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     environment: *backend-env
     command: ["arq", "app.worker.main.WorkerSettings"]
     healthcheck:

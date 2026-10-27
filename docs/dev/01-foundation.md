@@ -522,7 +522,7 @@ S3_SECRET_KEY=minioadmin
 S3_BUCKET=agenthub
 ```
 
-`.env` 是被 git 跟踪的本地开发默认值文件，`LLM_API_KEY` 留空，开发者自己在本地填上但**不要提交带 key 的版本**。在 README 的快速开始里提醒这一点。
+`.env.example` 是被 git 跟踪的本地开发默认值模板，`LLM_API_KEY` 留空；复制为被忽略的 `.env` 后再填写本地密钥，**不要强制提交 `.env`**。在 README 的快速开始里提醒这一点。
 
 ### 6.3 验收
 
@@ -791,6 +791,19 @@ docker compose up -d db redis minio mailpit
 ---
 
 ## 偏差记录
+
+- 2026-10-27 用户授权凭据与仓库卫生、CI/部署闭环修复：将根 `.env` 改为本地忽略文件，以脱敏 `.env.example` 提供开发/CI 默认值；同步 AGENTS.md、README/development/deployment 说明、Git/Docker 忽略规则和相关 GitHub Actions。修复阶段 08 后 CI 缺少 MinIO、分支触发、worker/MCP 启动与部署配置透传；前端测试仅修复已确认的格式问题。使用独立 Compose 项目验证，保留既有业务数据和用户文档。不将本地验证描述为远端发布或供应商密钥已轮换。
+- 同次镜像构建发现浮动 Bun 版本及不冻结安装会改写锁文件；配套修改后端/Playwright Dockerfile，固定已有 CI Bun 1.3.12、补齐 react-email workspace manifest，使用 `--frozen-lockfile`。不升级业务依赖。
+- Playwright 验收后确认生成的 `test-results` 会导致全目录 Biome 失败；在 `frontend/biome.json` 排除 `test-results` 和 `blob-report` 两个测试产物目录，防止 lint 改写测试证据。
+
+### 2026-10-27 本地 CI/部署闭环验收
+
+- 根 `.env` 已取消 Git 跟踪且本地保留；`embedding_API_info.txt` 与 `backend/.coverage-probe` 移至 `C:/Users/ZhangYan/AppData/Local/AgentHub/private-backup-20261027/originals/`，后者归档名为 `coverage-probe`。本地可达 Git 历史中的 `.env` 未发现非空 LLM/Embedding API key；该检查不代表全历史密钥扫描或供应商密钥轮换。
+- 独立 `agenthub-ci-audit` 项目中完成空库迁移、Checkpoint/对象存储初始化；Linux 容器运行后端 lint 全通过，默认测试 214 passed、10 deselected，覆盖率 93%（门槛 90%）；另跑 MCP 集成测试 9 passed、1 skipped（真实模型调用为显式 opt-in）。`alembic check` 无漂移。
+- 后端镜像（含前端 TypeScript/Vite 构建）和 Playwright 镜像构建通过；使用 Bun 1.3.12 冻结安装。镜像内未发现本地 `.env` 或凭据说明文件。前端只读 Biome 检查、工作流 zizmor 离线检查、`git diff --check` 通过；zizmor 沿用现有忽略规则。
+- 容器内完整默认 Playwright 套件：63 passed、10 skipped，耗时约 2 分钟，启用 `--fail-on-flaky-tests`；需要真实模型等外部条件的 opt-in 用例未运行。Blob 报告保存在 `frontend/blob-report/ci-hygiene-20261027/`，测试输出位于 `frontend/test-results/ci-hygiene-20261027/`，均不提交。排除生成产物后再次执行前端全目录只读 Biome 检查通过。验收后两个隔离项目的容器已停止，数据卷保留。
+- 独立 `agenthub-production-audit` 项目使用本次生成的随机凭据启动生产覆盖配置，数据库/Redis/MinIO/API/Worker/MCP 均 healthy；迁移无漂移、前端/API/MCP HTTP 检查及 arq 健康检查通过，生产模式未注册 private 测试路由，内部服务没有映射宿主端口。
+- 验收范围仅限本地：未提交、推送或触发远端 GitHub Actions，未发布公网服务，未验证真实域名、TLS 签发及付费模型/Embedding 链路。用户原有业务数据和 `docs/architecture.md` 未修改。
 
 - 2026-09-17 闭环范围：用户授权修复现有数据库排序规则并补齐 01/02 验收。先备份再重建索引并刷新 collation 版本；历史迁移回退仅在新建专用测试库执行，不回退 app 库。Windows worker 使用隔离安装的 arq 做兼容性探针，配套 `backend/scripts/check_windows_worker.py` 和 06 的启动约定属于本次明确范围，不提前实现生产 worker。为补齐阶段 02 的 v1/v2 不可变性浏览器证据，扩展现有 `frontend/tests/agents.spec.ts`。
 

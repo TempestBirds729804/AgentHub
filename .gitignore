@@ -6,3 +6,10 @@ backend/app/frontend/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Local credentials and disposable validation output
+/.env
+/.env.*
+!/.env.example
+/embedding_API_info.txt
+backend/.coverage*

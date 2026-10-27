@@ -25,7 +25,7 @@ AgentHub is an AI Agent management and execution platform built on FastAPI and R
 
 ## Quick Start
 
-1. Review the local defaults in `.env`. Keep `LLM_API_KEY` empty for CRUD-only development, or set it locally when model execution is required. Never commit a real API key.
+1. Copy `.env.example` to `.env` (PowerShell: `Copy-Item .env.example .env`), unless `.env` already exists. Keep `LLM_API_KEY` and `EMBEDDING_API_KEY` empty for CRUD-only development, or set them locally for model execution and document ingestion. `.env` is ignored by Git and Docker; never force-add it. Use deployment Secrets for production credentials.
 2. Start the infrastructure services:
 
    ```bash

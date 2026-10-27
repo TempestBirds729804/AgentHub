@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - master
+      - main
+      - 'feature/**'
+      - 'codex/**'
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 
@@ -12,18 +16,41 @@ jobs:
 
   test-docker-compose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: docker compose build
-      - run: docker compose down -v --remove-orphans
+      - run: cp .env.example .env
+      - run: docker compose build backend worker mcp-docs
       - run: docker compose run --rm backend bash scripts/prestart.sh
-      - run: docker compose up -d --wait backend adminer
+      - run: docker compose up -d --wait backend worker mcp-docs adminer
       - name: Test backend is up
-        run: curl http://localhost:8000/api/v1/utils/health-check
+        run: curl --fail --location http://localhost:8000/api/v1/utils/health-check/
       - name: Test frontend is up
-        run: curl http://localhost:8000
-      - run: docker compose down -v --remove-orphans
+        run: curl --fail http://localhost:8000
+      - name: Check database schema
+        run: docker compose exec -T backend alembic check
+      - name: Smoke test production services without public ingress
+        shell: bash
+        run: |
+          set -eu
+          export DOMAIN=agenthub-ci.invalid
+          export SECRET_KEY="$(openssl rand -hex 32)"
+          export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+          export FIRST_SUPERUSER_PASSWORD="$(openssl rand -hex 24)"
+          export S3_ACCESS_KEY="$(openssl rand -hex 16)"
+          export S3_SECRET_KEY="$(openssl rand -hex 24)"
+          compose() { docker compose --env-file .env.example -p agenthub-production-smoke -f compose.yml -f compose.deploy.yml "$@"; }
+          trap 'compose down -v --remove-orphans' EXIT
+          compose config --quiet
+          compose run --rm backend bash scripts/prestart.sh
+          compose up -d --wait --wait-timeout 180 backend worker mcp-docs
+          compose exec -T backend alembic check
+          compose exec -T backend curl --fail http://localhost:8000/
+          compose exec -T backend curl --fail http://mcp-docs:3001/health
+          compose exec -T worker arq app.worker.main.WorkerSettings --check
+      - name: Stop CI services
+        if: always()
+        run: docker compose down -v --remove-orphans

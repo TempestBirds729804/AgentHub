@@ -15,6 +15,7 @@ jobs:
     # Do not deploy the template repository, only projects created from it
     if: github.repository != 'fastapi/full-stack-fastapi-template'
     runs-on: self-hosted
+    environment: production
     timeout-minutes: 30
     env:
       DOMAIN: ${{ vars.DOMAIN }}
@@ -28,14 +29,43 @@ jobs:
       EMAILS_FROM_EMAIL: ${{ vars.EMAILS_FROM_EMAIL }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+      S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+      S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+      S3_BUCKET: ${{ vars.S3_BUCKET || 'agenthub' }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_BASE_URL: ${{ vars.LLM_BASE_URL || 'https://api.openai.com/v1' }}
+      LLM_MODEL: ${{ vars.LLM_MODEL || 'gpt-4o-mini' }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_BASE_URL: ${{ vars.EMBEDDING_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1' }}
+      EMBEDDING_MODEL: ${{ vars.EMBEDDING_MODEL || 'qwen3-vl-embedding' }}
+      EMBEDDING_DIM: '1536'
+      COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME || 'agenthub' }}
+      # Never read development credentials left on a persistent runner.
+      COMPOSE_ENV_FILES: /dev/null
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Validate production configuration
+        shell: bash
+        run: |
+          set -eu
+          for name in DOMAIN PROJECT_NAME FIRST_SUPERUSER SECRET_KEY FIRST_SUPERUSER_PASSWORD POSTGRES_PASSWORD S3_ACCESS_KEY S3_SECRET_KEY LLM_API_KEY EMBEDDING_API_KEY; do
+            value="${!name}"
+            if [[ -z "$value" || "$value" == changethis || "$value" == minioadmin ]]; then
+              echo "::error::Missing or development-only production setting: $name"
+              exit 1
+            fi
+          done
+          docker compose -f compose.yml -f compose.deploy.yml config --quiet
       - name: Build
         run: docker compose -f compose.yml -f compose.deploy.yml build
       - name: Prepare database
         run: docker compose -f compose.yml -f compose.deploy.yml run --rm backend bash scripts/prestart.sh
       - name: Start application
-        run: docker compose -f compose.yml -f compose.deploy.yml up -d
+        run: docker compose -f compose.yml -f compose.deploy.yml up -d --wait --wait-timeout 180
+      - name: Verify schema and frontend
+        run: |
+          docker compose -f compose.yml -f compose.deploy.yml exec -T backend alembic check
+          docker compose -f compose.yml -f compose.deploy.yml exec -T backend curl --fail http://localhost:8000/

@@ -7,6 +7,8 @@
 
 ## Local Development
 
+First copy the root `.env.example` to `.env` if it does not already exist. Keep local credentials in this ignored file.
+
 Run the backend locally and connect it to PostgreSQL in Docker Compose.
 
 From the project root, start PostgreSQL, Redis, MinIO, and Mailpit:

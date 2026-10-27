@@ -1,6 +1,8 @@
 # FastAPI Project - Deployment
 
-Deploy the project to [FastAPI Cloud](https://fastapicloud.com) with the included GitHub Actions workflow.
+For the complete AgentHub platform, use [Docker Compose deployment](deployment-docker-compose.md). The included FastAPI Cloud workflow deploys the API only and is disabled unless `ENABLE_FASTAPI_CLOUD_DEPLOY=true`; it is manually dispatched and uses the `production` environment.
+
+Cloud use additionally requires externally provisioned Redis, S3-compatible storage, an arq worker running the same release, and any configured MCP service. Configure `REDIS_URL`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_SECURE`, LLM and embedding settings both in the application and on the worker. For the workflow's database/storage preparation, supply `REDIS_URL`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` as GitHub Secrets and the S3 endpoint/bucket/TLS flag as Variables. These services must be reachable from the runner. This workflow does not provision or deploy them.
 
 ## Create the FastAPI Cloud Application
 
@@ -44,7 +46,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ## Configure Continuous Deployment
 
-The included `.github/workflows/deploy.yml` workflow builds the frontend, prepares the database, and deploys the application whenever changes are pushed to `master`. You can also run it manually from the **Actions** tab.
+The included `.github/workflows/deploy.yml` workflow builds the frontend, prepares the database/storage/checkpoints, and deploys the API when manually run from the **Actions** tab with `ENABLE_FASTAPI_CLOUD_DEPLOY=true`.
 
 Log in to FastAPI Cloud and configure the [deploy token](https://fastapicloud.com/docs/advanced-features/deploy-tokens/) and application ID as GitHub repository secrets:
 
