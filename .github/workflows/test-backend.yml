@@ -49,6 +49,8 @@ jobs:
         run: uv run alembic check
         working-directory: backend
       - name: Test real MCP transport without paid model calls
+        env:
+          FASTAPI_ENV: development
         run: uv run pytest -m mcp_integration tests/integration -q
         working-directory: backend
       - name: Store coverage files
