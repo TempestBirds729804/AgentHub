@@ -792,6 +792,9 @@ docker compose up -d db redis minio mailpit
 
 ## 偏差记录
 
+- 2026-10-27 P0：用户授权修复本地测试隔离。修改根目录 `scripts/test.sh`、`scripts/test-local.sh`，新增专用 `compose.test.yml` 并更新 development.md；随机项目名、固定非敏感配置、独立资源、不发布端口，成功/失败/中断只清理本次测试项目，不再清理默认开发项目或源码缓存。报告按运行分别保留；不改变直接运行 backend pytest 的原有约定。
+- P0 验收：注入开发项目名、部署 Compose 文件及外部数据库/模型环境变量后，隔离配置检查通过；完整后端测试 214 passed、10 deselected，覆盖率 93%。并行通过旧入口启动真实测试依赖后注入退出码 42，原始退出码保留且该项目资源清理完成，不影响另一份测试。TERM 退出码 143 和项目名冲突拒绝保护通过模拟 Docker 验证。成功及失败项目的容器、网络、数据卷均已清理；开发环境 PostgreSQL、Redis、MinIO 三个数据卷的 5422 个文件在前后只读校验中 SHA-256 均为 `0f80e15a84acdc97470aee134713e2b6a6471e8b1a46874bfc607be79b450cc8`，开发容器保持停止状态。两个脚本语法检查及 `git diff --check` 通过；覆盖率报告保留于 `backend/htmlcov/agenthub-test-btpjydyzuw/`。
+
 - 2026-10-27 用户授权从 MinIO 官方固定源码构建：远端 CI 拉取 `minio/minio` 被拒绝，本地缓存曾掩盖此问题。新增 `docker/minio/Dockerfile`，固定官方提交 `7aac2a2c5b7c882e68c1ce017d8256be2feea27f`，保留 S3 接口和现有数据卷；Compose 改用本地构建及 HTTP readiness，不依赖预构建 MinIO/mc 镜像。同步 CI 构建步骤、超时及部署说明。
 - 同次真实链路复验：本地隔离环境 5 项 Playwright 用例全部通过（含认证 setup），覆盖扫描 PDF 失败/重试/删除、Qwen 向量化与检索、引用持久化、真实模型流式记忆及独立 MCP 调用。使用本地密钥且未上传 GitHub，未执行密钥轮换或公网部署。Playwright 启动测试容器使用 `--no-deps`，避免已健康的 API 被 Compose 重建后立即测试导致连接拒绝。
 - 源码镜像本地构建、readiness、桶创建及对象上传/读取/删除通过；远端 Compose 含生产模式 smoke 通过。后端默认 214 项、93% 覆盖率及迁移检查通过后，MCP 集成步骤因缺少进程级 `FASTAPI_ENV=development` 而要求不存在的静态前端目录；为该步骤补齐与 `scripts/test.sh` 一致的环境变量，不修改应用行为。

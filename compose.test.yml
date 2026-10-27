@@ -1,0 +1,71 @@
+# Standalone test stack: never merge development/deployment overrides.
+services:
+  db:
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_DB: agenthub_test
+      POSTGRES_PASSWORD: test-only-password
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "agenthub_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - test-db:/var/lib/postgresql
+
+  redis:
+    image: redis:8-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  minio:
+    build:
+      context: ./docker/minio
+    environment:
+      MINIO_ROOT_USER: test-minio
+      MINIO_ROOT_PASSWORD: test-only-password
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:9000/minio/health/ready"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - test-minio:/data
+
+  mailpit:
+    image: axllent/mailpit
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      FASTAPI_ENV: development
+      PROJECT_NAME: AgentHub Tests
+      SECRET_KEY: local-test-only-secret-not-for-deployment
+      FIRST_SUPERUSER: admin@example.com
+      FIRST_SUPERUSER_PASSWORD: test-only-password
+      DATABASE_URL: postgresql://postgres:test-only-password@db:5432/agenthub_test
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: test-minio
+      S3_SECRET_KEY: test-only-password
+      S3_BUCKET: agenthub-test
+      LLM_API_KEY: ""
+      LLM_BASE_URL: http://127.0.0.1:1/v1
+      EMBEDDING_API_KEY: ""
+      EMBEDDING_BASE_URL: http://127.0.0.1:1/api/v1
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_TLS: "false"
+      EMAILS_FROM_EMAIL: info@example.com
+    volumes:
+      - ./backend/tests:/app/backend/tests:ro
+      - ${AGENTHUB_TEST_REPORT_DIR:?Run scripts/test.sh}:/app/backend/htmlcov
+
+volumes:
+  test-db:
+  test-minio:

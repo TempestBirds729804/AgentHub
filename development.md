@@ -2,6 +2,12 @@
 
 ## Local Development
 
+### Isolated local backend tests
+
+From the repository root, run `sh scripts/test.sh` (or the equivalent legacy entry point `sh scripts/test-local.sh`). This uses only `compose.test.yml`, fixed test credentials and a fresh random Compose project. It does not load `.env`, publish host ports, start a competing worker, or reuse development databases/Redis/object storage. Host `COMPOSE_PROJECT_NAME`, `COMPOSE_FILE` and application credentials do not select the test resources. Windows users can run the command from Git Bash with Docker Desktop running.
+
+On success, failure or a handled interrupt, only that run's containers/network/volumes are removed; HTML coverage is kept under `backend/htmlcov/agenthub-test-*/`. If the shell or Docker daemon is forcibly killed, cleanup cannot be guaranteed: inspect the printed project name before manually cleaning that exact project. Direct `uv run pytest` in `backend/` still uses the configured database and deletes test rows; never point it at a development/business database.
+
 Before the first run, copy `.env.example` to `.env` if `.env` does not already exist. Keep real credentials only in the ignored `.env`; do not overwrite an existing local configuration. CI copies the example and uses no paid model credentials.
 
 For local development, run PostgreSQL and Mailpit with Docker Compose, and run the FastAPI and Vite development servers locally.
